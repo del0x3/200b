@@ -402,6 +402,25 @@ button.small, .action-btn.small {
 }
 .small { font-size: 12px; }
 
+.qa-history-wrap {
+    margin-top: 22px;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+}
+.qa-history-wrap > summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 0;
+    list-style: revert;
+    user-select: none;
+}
+.qa-history-wrap[open] > summary { color: var(--text); margin-bottom: 14px; }
+.qa-history-wrap > summary:hover { color: var(--text); }
+.qa-history-label { font-weight: 500; }
+
 .qa-list {
     list-style: none;
     padding: 0;

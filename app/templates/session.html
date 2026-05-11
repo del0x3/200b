@@ -19,32 +19,9 @@
         {% endif %}
     </div>
 
-    {% if view.pairs %}
-    <ol class="qa-list">
-        {% for q, a in view.pairs %}
-        <li class="qa-item">
-            <div class="qa-q">
-                <span class="qa-marker">В</span>
-                <div class="qa-text">{{ q.question_text }}</div>
-                {% if q.feedback == 'like' %}<span class="qa-tag good">+</span>
-                {% elif q.feedback == 'dislike' %}<span class="qa-tag bad">−</span>{% endif %}
-            </div>
-            {% if a %}
-            <div class="qa-a">
-                <span class="qa-marker muted">О</span>
-                <div class="qa-text">{{ a }}</div>
-            </div>
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ol>
-    {% endif %}
-
     {% set need_new_global_topic = is_global and not view.last_unanswered %}
 
     {% if not need_new_global_topic %}
-    <div class="divider"><span>сейчас отвечаешь</span></div>
-
     <div id="stream-panel" class="stream-panel" data-stream-state="idle">
         <button type="button" class="stream-btn" id="stream-toggle">
             <span class="stream-dot" aria-hidden="true"></span>
@@ -109,6 +86,33 @@
         </form>
         {% endif %}
     </div>
+
+    {% if view.pairs %}
+    <details class="qa-history-wrap">
+        <summary>
+            <span class="qa-history-label">История ответов</span>
+            <span class="muted small">· {{ view.pairs|length }}</span>
+        </summary>
+        <ol class="qa-list qa-history">
+            {% for q, a in view.pairs %}
+            <li class="qa-item">
+                <div class="qa-q">
+                    <span class="qa-marker">В</span>
+                    <div class="qa-text">{{ q.question_text }}</div>
+                    {% if q.feedback == 'like' %}<span class="qa-tag good">+</span>
+                    {% elif q.feedback == 'dislike' %}<span class="qa-tag bad">−</span>{% endif %}
+                </div>
+                {% if a %}
+                <div class="qa-a">
+                    <span class="qa-marker muted">О</span>
+                    <div class="qa-text">{{ a }}</div>
+                </div>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ol>
+    </details>
+    {% endif %}
 </div>
 
 <script>
