@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, Response
+from fastapi import APIRouter, Depends, Form, Request, status
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from pydantic import ValidationError
 
 from app.dependencies import get_chat_service
@@ -26,6 +26,17 @@ def _render_question(request: Request, session_id: int, question_id: int, text: 
     )
 
 
+@router.get("/global")
+def open_global_session(
+    user: User = Depends(current_user),
+    service: ChatService = Depends(get_chat_service),
+) -> Response:
+    session = service.get_or_create_global_session(user)
+    return RedirectResponse(
+        url=f"/chat/session/{session.id}", status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
 @router.get("/session/{session_id}", response_class=HTMLResponse)
 def session_page(
     request: Request,
@@ -36,10 +47,11 @@ def session_page(
     view = service.get_session_view(user=user, session_id=session_id)
     if view is None:
         return Response(content="Сессия не найдена.", status_code=404)
+    is_global = service.is_global_session(user, view.session)
     return templates.TemplateResponse(
         request,
         "session.html",
-        {"view": view},
+        {"view": view, "is_global": is_global},
     )
 
 

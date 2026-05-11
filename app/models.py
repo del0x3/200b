@@ -73,6 +73,19 @@ class ChatQuestion(Base):
     )
 
 
+class UserGlobalSession(Base):
+    """Маркер глобальной сессии: одна на юзера, ссылается на её ChatSession."""
+
+    __tablename__ = "user_global_sessions"
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    session_id: Mapped[int] = mapped_column(
+        ForeignKey("chat_sessions.id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+
+
 class ChatAnswer(Base):
     __tablename__ = "chat_answers"
 

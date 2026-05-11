@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import ChatAnswer, ChatQuestion, ChatSession, Feedback, User
+from app.models import ChatAnswer, ChatQuestion, ChatSession, Feedback, User, UserGlobalSession
 
 
 class UserRepository:
@@ -74,15 +74,45 @@ class ChatRepository:
             .order_by(ChatSession.id.desc())
         )
 
-    def list_user_sessions(self, user_id: int) -> list[tuple[ChatSession, int]]:
-        rows = self._db.execute(
+    def list_user_sessions(
+        self, user_id: int, *, exclude_session_ids: list[int] | None = None
+    ) -> list[tuple[ChatSession, int]]:
+        stmt = (
             select(ChatSession, func.count(ChatQuestion.id))
             .outerjoin(ChatQuestion, ChatQuestion.session_id == ChatSession.id)
             .where(ChatSession.user_id == user_id)
             .group_by(ChatSession.id)
             .order_by(ChatSession.id.desc())
-        ).all()
+        )
+        if exclude_session_ids:
+            stmt = stmt.where(ChatSession.id.notin_(exclude_session_ids))
+        rows = self._db.execute(stmt).all()
         return [(s, int(n or 0)) for s, n in rows]
+
+    def get_global_session_id(self, user_id: int) -> int | None:
+        return self._db.scalar(
+            select(UserGlobalSession.session_id).where(UserGlobalSession.user_id == user_id)
+        )
+
+    def set_global_session(self, user_id: int, session_id: int) -> None:
+        marker = UserGlobalSession(user_id=user_id, session_id=session_id)
+        self._db.add(marker)
+        self._db.commit()
+
+    def list_recent_qa_excluding_session(
+        self, user_id: int, exclude_session_id: int, *, limit: int = 60
+    ) -> list[tuple[str, ChatQuestion, str | None]]:
+        """(session_topic, question, answer_or_none) — последние Q&A автора из других сессий."""
+        rows = self._db.execute(
+            select(ChatSession.topic, ChatQuestion, ChatAnswer.answer_text)
+            .join(ChatQuestion, ChatQuestion.session_id == ChatSession.id)
+            .outerjoin(ChatAnswer, ChatAnswer.question_id == ChatQuestion.id)
+            .where(ChatSession.user_id == user_id, ChatSession.id != exclude_session_id)
+            .order_by(ChatQuestion.id.desc())
+            .limit(limit)
+        ).all()
+        # Возвращаем в хронологическом порядке (старые первыми).
+        return [(t, q, a) for t, q, a in reversed(rows)]
 
     def get_session_owned_by(self, *, session_id: int, user_id: int) -> ChatSession | None:
         return self._db.scalar(

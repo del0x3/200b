@@ -239,6 +239,32 @@ button.primary.big { width: 100%; padding: 14px 18px; font-size: 16px; }
 .nav-link:hover { color: var(--text); background: var(--surface-2); text-decoration: none; }
 .nav-upload { display: inline-flex; align-items: center; }
 
+/* ===== CTA глобальной сессии ===== */
+.global-cta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: linear-gradient(135deg, rgba(124, 92, 255, 0.12), rgba(90, 61, 240, 0.05));
+    color: var(--text);
+    text-decoration: none;
+    transition: border-color 0.15s, transform 0.06s;
+    margin-bottom: 4px;
+}
+.global-cta:hover {
+    border-color: var(--accent);
+    text-decoration: none;
+}
+.global-cta:active { transform: translateY(1px); }
+.global-cta-icon { font-size: 22px; line-height: 1; }
+.global-cta-body { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.global-cta-title { font-size: 16px; font-weight: 600; }
+.global-cta-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.global-cta-arrow { font-size: 20px; color: var(--accent); opacity: 0.7; }
+.global-cta:hover .global-cta-arrow { opacity: 1; }
+
 /* ===== Список сессий на главной ===== */
 .session-list {
     list-style: none;

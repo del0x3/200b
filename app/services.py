@@ -203,8 +203,20 @@ class ChatService:
     ) -> CurrentQuestion:
         history: list[ChatQuestion] = self._chat.list_questions(session.id)
         answers: dict[int, str] = self._chat.answers_by_question_id(session.id)
+        is_global: bool = self.is_global_session(user, session)
+        prior: list[tuple[str, ChatQuestion, str | None]] = (
+            self._chat.list_recent_qa_excluding_session(user.id, session.id)
+            if is_global
+            else []
+        )
         question_text: str = await self._generate(
-            user=user, session=session, history=history, answers=answers, pivot=pivot
+            user=user,
+            session=session,
+            history=history,
+            answers=answers,
+            pivot=pivot,
+            prior_experience=prior,
+            is_global=is_global,
         )
         next_position: int = max((q.position for q in history), default=-1) + 1
         next_q = self._chat.add_question(
@@ -220,6 +232,8 @@ class ChatService:
         history: list[ChatQuestion],
         answers: dict[int, str] | None = None,
         pivot: bool = False,
+        prior_experience: list[tuple[str, ChatQuestion, str | None]] | None = None,
+        is_global: bool = False,
     ) -> str:
         messages = self._prompts.build(
             profile_md=user.profile_md,
@@ -227,6 +241,8 @@ class ChatService:
             history=history,
             answers=answers or {},
             pivot=pivot,
+            prior_experience=prior_experience or [],
+            is_global=is_global,
         )
         try:
             return await self._deepseek.chat(messages)
@@ -237,11 +253,29 @@ class ChatService:
     def _lookup_question(self, user: User, question_id: int) -> ChatQuestion | None:
         return self._chat.get_question_owned_by(question_id=question_id, user_id=user.id)
 
+    GLOBAL_TOPIC: str = "Глобальный диалог: всё, что копится поверх любых тем"
+
     def list_sessions(self, user: User) -> list[SessionSummary]:
+        global_id: int | None = self._chat.get_global_session_id(user.id)
+        excluded: list[int] = [global_id] if global_id is not None else []
         return [
             SessionSummary(session=s, questions_count=n)
-            for s, n in self._chat.list_user_sessions(user.id)
+            for s, n in self._chat.list_user_sessions(user.id, exclude_session_ids=excluded)
         ]
+
+    def get_or_create_global_session(self, user: User) -> ChatSession:
+        gid: int | None = self._chat.get_global_session_id(user.id)
+        if gid is not None:
+            existing = self._chat.get_session_owned_by(session_id=gid, user_id=user.id)
+            if existing is not None:
+                return existing
+        session = self._chat.create_session(user_id=user.id, topic=self.GLOBAL_TOPIC)
+        self._chat.set_global_session(user.id, session.id)
+        return session
+
+    def is_global_session(self, user: User, session: ChatSession) -> bool:
+        gid: int | None = self._chat.get_global_session_id(user.id)
+        return gid is not None and gid == session.id
 
     def get_session_view(self, *, user: User, session_id: int) -> SessionView | None:
         session = self._chat.get_session_owned_by(session_id=session_id, user_id=user.id)

@@ -6,6 +6,17 @@
 {% block content %}
 <div class="card" id="chat-card">
     <div id="topic-form">
+        <a href="/chat/global" class="global-cta">
+            <span class="global-cta-icon">🌍</span>
+            <span class="global-cta-body">
+                <span class="global-cta-title">Глобальная сессия</span>
+                <span class="global-cta-sub">общий дневник поверх всех тем — копится вечно</span>
+            </span>
+            <span class="global-cta-arrow">→</span>
+        </a>
+
+        <div class="divider"><span>или новая тематическая</span></div>
+
         <h1>О чём хочешь поговорить сегодня?</h1>
         <p class="muted">Опиши тему дня в одном-двух предложениях. Нейронка задаст наводящие вопросы — твоя задача отвечать и отмечать, что заходит, а что нет.</p>
         <form hx-post="/chat/start"

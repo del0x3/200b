@@ -9,8 +9,14 @@
 {% block content %}
 <div class="card">
     <div class="session-header">
+        {% if is_global %}
+        <div class="muted small">🌍 глобальная сессия · с {{ view.session.created_at.strftime('%d.%m.%Y') }}</div>
+        <h1 class="session-title">Глобальный диалог</h1>
+        <p class="muted">Вопросы здесь строятся поверх всего, что ты когда-либо отвечал в других сессиях. Возвращайся когда угодно.</p>
+        {% else %}
         <div class="muted small">тема сессии · {{ view.session.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
         <h1 class="session-title">{{ view.session.topic }}</h1>
+        {% endif %}
     </div>
 
     {% if view.pairs %}

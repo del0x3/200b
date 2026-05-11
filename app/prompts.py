@@ -65,8 +65,11 @@ class PromptBuilder:
         history: list[ChatQuestion],
         answers: dict[int, str] | None = None,
         pivot: bool = False,
+        prior_experience: list[tuple[str, ChatQuestion, str | None]] | None = None,
+        is_global: bool = False,
     ) -> list[ChatMessage]:
         answers_map: dict[int, str] = answers or {}
+        prior: list[tuple[str, ChatQuestion, str | None]] = prior_experience or []
         sections: list[str] = []
 
         cleaned_profile: str = (profile_md or "").strip()
@@ -79,7 +82,34 @@ class PromptBuilder:
                 "=== Портрет автора ===\n(пока пусто — опирайся только на тему дня)"
             )
 
-        sections.append(f"=== Тема, о которой автор хочет говорить сегодня ===\n{topic}")
+        if is_global:
+            sections.append(
+                "=== Режим: глобальный диалог ===\n"
+                "Это не разговор по одной теме. Автор открыл общий «дневник», "
+                "куда он возвращается между темами. Твоя задача — задавать "
+                "вопрос, который опирается на его прошлый опыт (см. ниже) "
+                "и/или на текущую историю этой глобальной сессии. "
+                "Можешь подсветить связь между разными темами автора, "
+                "противоречие в его ответах, повторяющийся мотив или непрожитое "
+                "место. Тема не задана."
+            )
+        else:
+            sections.append(f"=== Тема, о которой автор хочет говорить сегодня ===\n{topic}")
+
+        if prior:
+            prior_blocks: list[str] = []
+            for sess_topic, q, a in prior:
+                line = f"[тема: {sess_topic}] В: {q.question_text}"
+                if a and a.strip():
+                    line += f"\n    О: {a.strip()}"
+                prior_blocks.append(line)
+            sections.append(
+                "=== Прошлый опыт автора (фрагменты из других сессий) ===\n"
+                + "\n\n".join(prior_blocks)
+                + "\n\nИспользуй эти фрагменты как контекст: ты знаешь, что "
+                "автор уже отвечал на похожие вопросы или поднимал эти темы. "
+                "Не повторяй формулировки, ищи новый угол поверх старых."
+            )
 
         if history:
             history_blocks: list[str] = []
