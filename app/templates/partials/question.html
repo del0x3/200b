@@ -1,11 +1,36 @@
-<div class="qblock">
+<div class="qblock" data-question-id="{{ question_id }}">
     <div class="question-label">Вопрос</div>
     <h2 class="question">{{ question_text }}</h2>
+
+    <form class="answer-form"
+          hx-post="/chat/answer"
+          hx-target="#chat-card"
+          hx-swap="innerHTML"
+          hx-disabled-elt="closest .qblock button, closest .qblock textarea"
+          hx-indicator="closest .qblock .loader">
+        <input type="hidden" name="question_id" value="{{ question_id }}">
+        <textarea name="answer_text"
+                  class="answer-input"
+                  rows="3"
+                  placeholder="Ответь словами или диктуй голосом — текст добавится сюда"
+                  required></textarea>
+        <div class="answer-actions">
+            <button type="button" class="mic-btn" data-mic title="Записать голосом" aria-label="Записать голосом">
+                <span class="mic-icon" aria-hidden="true">🎤</span>
+                <span class="mic-label">Голосом</span>
+            </button>
+            <button type="submit" class="primary">Отправить ответ</button>
+        </div>
+        <div class="mic-hint muted" data-mic-hint></div>
+    </form>
+
+    <div class="divider"><span>или просто реакция на вопрос</span></div>
+
     <div class="actions">
         <form hx-post="/chat/feedback"
               hx-target="#chat-card"
               hx-swap="innerHTML"
-              hx-disabled-elt="closest .qblock .actions button"
+              hx-disabled-elt="closest .qblock button, closest .qblock textarea"
               hx-indicator="closest .qblock .loader">
             <input type="hidden" name="question_id" value="{{ question_id }}">
             <input type="hidden" name="feedback" value="like">
@@ -14,7 +39,7 @@
         <form hx-post="/chat/feedback"
               hx-target="#chat-card"
               hx-swap="innerHTML"
-              hx-disabled-elt="closest .qblock .actions button"
+              hx-disabled-elt="closest .qblock button, closest .qblock textarea"
               hx-indicator="closest .qblock .loader">
             <input type="hidden" name="question_id" value="{{ question_id }}">
             <input type="hidden" name="feedback" value="dislike">
@@ -23,14 +48,115 @@
         <form hx-post="/chat/pivot"
               hx-target="#chat-card"
               hx-swap="innerHTML"
-              hx-disabled-elt="closest .qblock .actions button"
+              hx-disabled-elt="closest .qblock button, closest .qblock textarea"
               hx-indicator="closest .qblock .loader">
             <input type="hidden" name="session_id" value="{{ session_id }}">
             <button type="submit" class="ghost">🔄 Другое направление</button>
         </form>
     </div>
+
     <div class="loader" aria-live="polite" aria-hidden="true">
         <span class="spinner"></span>
         <span class="loader-text">пишу следующий вопрос…</span>
     </div>
 </div>
+<script>
+(function () {
+    const root = document.querySelector('.qblock[data-question-id="{{ question_id }}"]');
+    if (!root) return;
+    const btn = root.querySelector('[data-mic]');
+    const ta = root.querySelector('.answer-input');
+    const hint = root.querySelector('[data-mic-hint]');
+    if (!btn || !ta) return;
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+        btn.disabled = true;
+        btn.classList.add('mic-unsupported');
+        if (hint) hint.textContent = 'Голосовой ввод не поддерживается этим браузером — открой в Chrome или Edge, или просто набери текст.';
+        return;
+    }
+
+    if (window._activeRecognition) {
+        try { window._activeRecognition.abort(); } catch (e) {}
+        window._activeRecognition = null;
+    }
+
+    let rec = null;
+    let active = false;
+    let baseText = '';
+
+    function startBtn() {
+        btn.classList.remove('mic-recording');
+        btn.querySelector('.mic-label').textContent = 'Голосом';
+        btn.setAttribute('aria-label', 'Записать голосом');
+        btn.title = 'Записать голосом';
+    }
+    function stopBtn() {
+        btn.classList.add('mic-recording');
+        btn.querySelector('.mic-label').textContent = 'Остановить';
+        btn.setAttribute('aria-label', 'Остановить запись');
+        btn.title = 'Остановить запись';
+    }
+
+    function start() {
+        rec = new SR();
+        rec.lang = 'ru-RU';
+        rec.continuous = true;
+        rec.interimResults = true;
+        baseText = ta.value;
+        if (baseText && !baseText.endsWith(' ') && !baseText.endsWith('\n')) baseText += ' ';
+
+        rec.onresult = function (e) {
+            let finalChunk = '';
+            let interim = '';
+            for (let i = e.resultIndex; i < e.results.length; i++) {
+                const r = e.results[i];
+                if (r.isFinal) finalChunk += r[0].transcript;
+                else interim += r[0].transcript;
+            }
+            if (finalChunk) {
+                baseText += finalChunk;
+                if (!baseText.endsWith(' ')) baseText += ' ';
+            }
+            ta.value = baseText + interim;
+        };
+        rec.onerror = function (e) {
+            if (hint) {
+                if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                    hint.textContent = 'Доступ к микрофону запрещён. Разреши его в настройках браузера.';
+                } else if (e.error === 'no-speech') {
+                    hint.textContent = 'Не услышал речь — попробуй ещё раз.';
+                } else if (e.error === 'audio-capture') {
+                    hint.textContent = 'Не вижу микрофон. Проверь, что он подключён.';
+                } else {
+                    hint.textContent = 'Ошибка распознавания: ' + e.error;
+                }
+            }
+        };
+        rec.onend = function () {
+            active = false;
+            window._activeRecognition = null;
+            startBtn();
+        };
+        try {
+            rec.start();
+            active = true;
+            window._activeRecognition = rec;
+            stopBtn();
+            if (hint) hint.textContent = 'Слушаю… говори.';
+        } catch (e) {
+            if (hint) hint.textContent = 'Не удалось запустить запись: ' + e.message;
+        }
+    }
+    function stop() {
+        if (rec && active) {
+            try { rec.stop(); } catch (e) {}
+        }
+    }
+
+    btn.addEventListener('click', function () {
+        if (active) stop(); else start();
+    });
+})();
+</script>

@@ -68,3 +68,21 @@ class ChatQuestion(Base):
     )
 
     session: Mapped["ChatSession"] = relationship(back_populates="questions")
+    answer: Mapped["ChatAnswer | None"] = relationship(
+        back_populates="question", cascade="all, delete-orphan", uselist=False
+    )
+
+
+class ChatAnswer(Base):
+    __tablename__ = "chat_answers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    question_id: Mapped[int] = mapped_column(
+        ForeignKey("chat_questions.id", ondelete="CASCADE"), unique=True, index=True
+    )
+    answer_text: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    question: Mapped["ChatQuestion"] = relationship(back_populates="answer")

@@ -63,8 +63,10 @@ class PromptBuilder:
         profile_md: str,
         topic: str,
         history: list[ChatQuestion],
+        answers: dict[int, str] | None = None,
         pivot: bool = False,
     ) -> list[ChatMessage]:
+        answers_map: dict[int, str] = answers or {}
         sections: list[str] = []
 
         cleaned_profile: str = (profile_md or "").strip()
@@ -80,8 +82,8 @@ class PromptBuilder:
         sections.append(f"=== Тема, о которой автор хочет говорить сегодня ===\n{topic}")
 
         if history:
-            history_lines: list[str] = []
-            for q in history:
+            history_blocks: list[str] = []
+            for i, q in enumerate(history, 1):
                 tag: str
                 if q.feedback == Feedback.LIKE.value:
                     tag = "[ПОНРАВИЛОСЬ]"
@@ -89,18 +91,28 @@ class PromptBuilder:
                     tag = "[НЕ ПОНРАВИЛОСЬ]"
                 else:
                     tag = "[БЕЗ ОЦЕНКИ]"
-                history_lines.append(f"{tag} {q.question_text}")
+                block = f"В{i} {tag}: {q.question_text}"
+                ans = (answers_map.get(q.id) or "").strip()
+                if ans:
+                    block += f"\nОтвет автора: {ans}"
+                else:
+                    block += "\n(автор не ответил, только оценил)"
+                history_blocks.append(block)
             sections.append(
-                "=== Уже заданные в этой сессии вопросы ===\n"
-                + "\n".join(history_lines)
-                + "\n\nУчитывай: автору заходят углы похожие на [ПОНРАВИЛОСЬ] "
-                "и не заходят похожие на [НЕ ПОНРАВИЛОСЬ]. Никогда не повторяй "
-                "уже заданный вопрос и не задавай его перефразированную копию."
+                "=== Уже пройденные пары «вопрос → ответ» в этой сессии ===\n"
+                + "\n\n".join(history_blocks)
+                + "\n\nКак использовать историю:\n"
+                "- Углы из [ПОНРАВИЛОСЬ] заходят — двигайся рядом, но не повторяйся.\n"
+                "- Углы из [НЕ ПОНРАВИЛОСЬ] не заходят — избегай похожих.\n"
+                "- Если автор ОТВЕТИЛ — следующий вопрос углубляет именно ту "
+                "конкретику, которую он раскрыл (имя, факт, эмоция из ответа).\n"
+                "- Никогда не повторяй уже заданный вопрос и не задавай его "
+                "перефразированную копию."
             )
         else:
             sections.append(
-                "=== Уже заданные в этой сессии вопросы ===\n(пока ни одного — "
-                "это первый вопрос автору, опирайся на портрет и тему)"
+                "=== Уже пройденные пары «вопрос → ответ» в этой сессии ===\n"
+                "(пока ни одной — это первый вопрос автору, опирайся на портрет и тему)"
             )
 
         if pivot:

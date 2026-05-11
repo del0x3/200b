@@ -41,3 +41,8 @@ class ChatFeedbackForm(BaseModel):
 
 class ChatPivotForm(BaseModel):
     session_id: int
+
+
+class ChatAnswerForm(BaseModel):
+    question_id: int
+    answer_text: str = Field(min_length=1, max_length=10000)

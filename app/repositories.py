@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import ChatQuestion, ChatSession, Feedback, User
+from app.models import ChatAnswer, ChatQuestion, ChatSession, Feedback, User
 
 
 class UserRepository:
@@ -94,3 +94,24 @@ class ChatRepository:
     def set_feedback(self, question: ChatQuestion, feedback: Feedback) -> None:
         question.feedback = feedback.value
         self._db.commit()
+
+    def upsert_answer(self, question: ChatQuestion, answer_text: str) -> ChatAnswer:
+        existing = self._db.scalar(
+            select(ChatAnswer).where(ChatAnswer.question_id == question.id)
+        )
+        if existing is None:
+            existing = ChatAnswer(question_id=question.id, answer_text=answer_text)
+            self._db.add(existing)
+        else:
+            existing.answer_text = answer_text
+        self._db.commit()
+        self._db.refresh(existing)
+        return existing
+
+    def answers_by_question_id(self, session_id: int) -> dict[int, str]:
+        rows = self._db.scalars(
+            select(ChatAnswer)
+            .join(ChatQuestion, ChatAnswer.question_id == ChatQuestion.id)
+            .where(ChatQuestion.session_id == session_id)
+        ).all()
+        return {a.question_id: a.answer_text for a in rows}

@@ -159,21 +159,35 @@ class ChatService:
         )
         if session is None:
             raise ValueError("session not found")
-        history: list[ChatQuestion] = self._chat.list_questions(session.id)
-        question_text: str = await self._generate(user=user, session=session, history=history)
-        next_position: int = max((q.position for q in history), default=-1) + 1
-        next_q = self._chat.add_question(
-            session_id=session.id, position=next_position, text=question_text
+        return await self._generate_next(user=user, session=session)
+
+    async def answer_and_next(
+        self, *, user: User, question_id: int, answer_text: str
+    ) -> CurrentQuestion:
+        question: ChatQuestion | None = self._lookup_question(user, question_id)
+        if question is None:
+            raise ValueError("question not found")
+        self._chat.upsert_answer(question, answer_text)
+        session: ChatSession | None = self._chat.get_session(
+            session_id=question.session_id, user_id=user.id
         )
-        return CurrentQuestion(session_id=session.id, question=next_q)
+        if session is None:
+            raise ValueError("session not found")
+        return await self._generate_next(user=user, session=session)
 
     async def pivot(self, *, user: User, session_id: int) -> CurrentQuestion:
         session: ChatSession | None = self._chat.get_session(session_id=session_id, user_id=user.id)
         if session is None:
             raise ValueError("session not found")
+        return await self._generate_next(user=user, session=session, pivot=True)
+
+    async def _generate_next(
+        self, *, user: User, session: ChatSession, pivot: bool = False
+    ) -> CurrentQuestion:
         history: list[ChatQuestion] = self._chat.list_questions(session.id)
+        answers: dict[int, str] = self._chat.answers_by_question_id(session.id)
         question_text: str = await self._generate(
-            user=user, session=session, history=history, pivot=True
+            user=user, session=session, history=history, answers=answers, pivot=pivot
         )
         next_position: int = max((q.position for q in history), default=-1) + 1
         next_q = self._chat.add_question(
@@ -187,10 +201,15 @@ class ChatService:
         user: User,
         session: ChatSession,
         history: list[ChatQuestion],
+        answers: dict[int, str] | None = None,
         pivot: bool = False,
     ) -> str:
         messages = self._prompts.build(
-            profile_md=user.profile_md, topic=session.topic, history=history, pivot=pivot
+            profile_md=user.profile_md,
+            topic=session.topic,
+            history=history,
+            answers=answers or {},
+            pivot=pivot,
         )
         try:
             return await self._deepseek.chat(messages)
