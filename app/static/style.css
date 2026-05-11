@@ -159,9 +159,104 @@ button.bad  { border-color: var(--bad);  color: var(--bad);  background: rgba(25
 .md-editor:focus { background: var(--surface-2); }
 
 .doc-editor {
-    min-height: 280px;
-    font-size: 15px;
-    line-height: 1.55;
+    min-height: 180px;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 12px 14px;
+}
+
+/* ===== Документы: grid из карточек ===== */
+.doc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 14px;
+    margin-bottom: 14px;
+}
+.doc-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface-2);
+    padding: 12px 14px;
+    transition: border-color 0.15s, opacity 0.15s;
+}
+.doc-card:focus-within { border-color: var(--accent); }
+.doc-card.is-disabled { opacity: 0.55; }
+.doc-card.is-disabled:focus-within { opacity: 1; }
+.doc-form { display: flex; flex-direction: column; gap: 10px; }
+.doc-card-head {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.doc-card-title {
+    flex: 1;
+    padding: 8px 12px;
+    font-weight: 500;
+    font-size: 14px;
+    background: var(--surface);
+}
+.doc-card-toggle {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    font-size: 12px;
+}
+.doc-card-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+}
+.doc-card-actions {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+}
+.doc-card-actions .action-btn.small,
+.doc-card-actions button.small {
+    padding: 5px 9px;
+    font-size: 13px;
+    line-height: 1;
+}
+.doc-dirty-flag {
+    font-size: 12px;
+    transition: color 0.15s;
+}
+.doc-dirty-flag.is-dirty { color: var(--accent); }
+
+.doc-add-row {
+    display: grid;
+    gap: 14px;
+}
+.doc-form-new {
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: var(--surface-2);
+}
+.doc-upload-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+}
+.doc-upload-form input[type="text"] { flex: 1; min-width: 180px; padding: 8px 12px; font-size: 13px; }
+.doc-upload-form .upload-btn { flex-shrink: 0; }
+
+@media (max-width: 520px) {
+    .doc-grid { grid-template-columns: 1fr; }
+    .doc-card-head { flex-direction: column; align-items: stretch; }
+    .doc-card-toggle { align-self: flex-start; }
 }
 
 .row { display: flex; align-items: center; gap: 14px; }

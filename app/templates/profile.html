@@ -126,68 +126,64 @@
     <p class="muted">Длинные MD-тексты про тебя: биография, стиль письма, описание ниши, бизнес-модель — что угодно. Нейронка читает все включённые документы перед каждым вопросом. Лимита по количеству нет.</p>
 
     {% if documents %}
-    <ul class="ctx-list">
+    <div class="doc-grid">
         {% for d in documents %}
-        <li class="ctx-item">
-            <form method="post" action="/profile/doc/{{ d.id }}" class="stack ctx-form">
-                <label>
-                    <span>Название</span>
-                    <input type="text" name="title" value="{{ d.title }}" placeholder="Например: моя биография" maxlength="200">
-                </label>
-                <label>
-                    <span>Содержимое (Markdown)</span>
-                    <textarea name="content" rows="14" class="md-editor doc-editor" placeholder="# Заголовок документа&#10;&#10;Текст..." required>{{ d.content }}</textarea>
-                </label>
-                <div class="ctx-footer">
-                    <label class="ctx-toggle">
+        <article class="doc-card {% if not d.enabled %}is-disabled{% endif %}" data-doc-id="{{ d.id }}">
+            <form method="post" action="/profile/doc/{{ d.id }}" class="doc-form" data-dirty-form>
+                <div class="doc-card-head">
+                    <input type="text" name="title" value="{{ d.title }}" placeholder="Название документа" maxlength="200" class="doc-card-title">
+                    <label class="ctx-toggle doc-card-toggle">
                         <input type="checkbox" name="enabled" value="1" {% if d.enabled %}checked{% endif %}>
-                        <span>включено</span>
+                        <span>вкл</span>
                     </label>
-                    <div class="ctx-actions">
-                        <a href="/profile/doc/{{ d.id }}/download" class="action-btn small">Скачать .md</a>
-                        <button type="submit" class="primary small">Сохранить</button>
-                        <button type="submit" form="del-doc-{{ d.id }}" class="ghost danger small">Удалить</button>
+                </div>
+                <textarea name="content" rows="8" class="md-editor doc-editor" placeholder="# Заголовок документа&#10;&#10;Текст..." required>{{ d.content }}</textarea>
+                <div class="doc-card-foot">
+                    <span class="doc-dirty-flag muted small" data-dirty-flag>сохранено</span>
+                    <div class="doc-card-actions">
+                        <a href="/profile/doc/{{ d.id }}/download" class="action-btn small" title="Скачать .md">↓</a>
+                        <button type="submit" form="del-doc-{{ d.id }}" class="ghost danger small" title="Удалить">×</button>
+                        <button type="submit" class="primary small" data-save-btn disabled>Сохранить</button>
                     </div>
                 </div>
             </form>
             <form id="del-doc-{{ d.id }}" method="post" action="/profile/doc/{{ d.id }}/delete"
                   onsubmit="return confirm('Удалить документ «{{ d.title|default(d.content[:40], true) }}»?');"></form>
-        </li>
+        </article>
         {% endfor %}
-    </ul>
+    </div>
     {% else %}
     <p class="muted small">Ещё ни одного документа.</p>
     {% endif %}
 
-    <div class="divider"><span>новый документ</span></div>
+    <div class="divider"><span>добавить документ</span></div>
 
-    <form method="post" action="/profile/doc" class="stack">
-        <label>
-            <span>Название</span>
-            <input type="text" name="title" placeholder="Например: моя биография" maxlength="200">
-        </label>
-        <label>
-            <span>Содержимое (Markdown)</span>
-            <textarea name="content" rows="14" class="md-editor doc-editor" required placeholder="# Заголовок&#10;&#10;Пиши свободно. Это полноценный MD-файл."></textarea>
-        </label>
-        <div class="ctx-footer">
-            <label class="ctx-toggle">
-                <input type="checkbox" name="enabled" value="1" checked>
-                <span>сразу включить</span>
+    <div class="doc-add-row">
+        <form method="post" action="/profile/doc" class="doc-form doc-form-new" data-dirty-form>
+            <div class="doc-card-head">
+                <input type="text" name="title" placeholder="Название документа" maxlength="200" class="doc-card-title">
+                <label class="ctx-toggle doc-card-toggle">
+                    <input type="checkbox" name="enabled" value="1" checked>
+                    <span>вкл</span>
+                </label>
+            </div>
+            <textarea name="content" rows="8" class="md-editor doc-editor" required placeholder="# Заголовок&#10;&#10;Пиши свободно. Это полноценный MD-файл."></textarea>
+            <div class="doc-card-foot">
+                <span class="muted small">или загрузи готовый .md →</span>
+                <button type="submit" class="primary small" data-save-btn disabled>Добавить документ</button>
+            </div>
+        </form>
+
+        <form method="post" action="/profile/doc/upload" enctype="multipart/form-data" class="doc-upload-form">
+            <input type="text" name="title" placeholder="Название (необязательно)" maxlength="200">
+            <label class="action-btn small upload-btn">
+                Выбрать .md-файл
+                <input type="file" name="file" accept=".md,.markdown,text/markdown,text/plain"
+                       onchange="this.form.submit()" class="hidden-file">
             </label>
-            <button type="submit" class="primary">Добавить документ</button>
-        </div>
-    </form>
-
-    <div class="muted small" style="margin-top: 14px;">или загрузи готовый .md-файл:</div>
-    <form method="post" action="/profile/doc/upload" enctype="multipart/form-data" class="row" style="gap: 8px; margin-top: 6px;">
-        <input type="text" name="title" placeholder="Название (необязательно)" style="flex: 1;">
-        <label class="action-btn small">
-            Выбрать .md
-            <input type="file" name="file" accept=".md,.markdown,text/markdown,text/plain"
-                   onchange="this.form.submit()" class="hidden-file">
-        </label>
-    </form>
+            <span class="muted small">До 1 МБ, UTF-8</span>
+        </form>
+    </div>
 </div>
 
 <!-- === Карточка 3: Ресурсы (ссылки) === -->
@@ -302,6 +298,46 @@
 
     window.addEventListener("beforeunload", function (e) {
         if (dirty) { e.preventDefault(); e.returnValue = ""; }
+    });
+})();
+
+// ---- Документы: dirty-tracking, save disabled пока нет изменений ----
+(function () {
+    document.querySelectorAll('form[data-dirty-form]').forEach(function (form) {
+        const saveBtn = form.querySelector('[data-save-btn]');
+        const flag = form.querySelector('[data-dirty-flag]');
+        if (!saveBtn) return;
+
+        const initial = {};
+        form.querySelectorAll('input[name], textarea[name]').forEach(function (el) {
+            if (el.type === 'checkbox') initial[el.name] = el.checked;
+            else initial[el.name] = el.value;
+        });
+
+        function isDirty() {
+            let dirty = false;
+            form.querySelectorAll('input[name], textarea[name]').forEach(function (el) {
+                if (el.type === 'checkbox') {
+                    if (el.checked !== initial[el.name]) dirty = true;
+                } else {
+                    if (el.value !== initial[el.name]) dirty = true;
+                }
+            });
+            return dirty;
+        }
+
+        function refresh() {
+            const dirty = isDirty();
+            saveBtn.disabled = !dirty;
+            if (flag) {
+                flag.textContent = dirty ? 'есть несохранённые изменения' : 'сохранено';
+                flag.classList.toggle('is-dirty', dirty);
+            }
+        }
+
+        form.addEventListener('input', refresh);
+        form.addEventListener('change', refresh);
+        refresh();
     });
 })();
 </script>

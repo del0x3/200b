@@ -25,7 +25,8 @@ def test_home_page_authed(authed_client: TestClient) -> None:
     assert "Портрет" in r.text
     assert "MD-документы" in r.text
     assert "Указания и ссылки" in r.text
-    assert "/profile#documents" in r.text
+    # Documents link must appear in BOTH the topbar nav and the action-grid
+    assert r.text.count("/profile#documents") >= 2
     # The single topic form should expose BOTH actions: new thematic session and global.
     assert 'hx-post="/chat/start"' in r.text
     assert 'hx-post="/chat/global/start"' in r.text

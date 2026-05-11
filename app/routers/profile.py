@@ -210,7 +210,7 @@ def doc_create(
     if not content.strip():
         return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
     service.create_document(user, title=title, content=content, enabled=bool(enabled))
-    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/profile#documents", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/profile/doc/upload")
@@ -231,7 +231,7 @@ async def doc_upload(
     service.create_document(
         user, title=(title.strip() or fallback_title), content=text, enabled=True
     )
-    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/profile#documents", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/profile/doc/{doc_id}")
@@ -246,7 +246,7 @@ def doc_update(
     service.update_document(
         user, doc_id, title=title, content=content, enabled=bool(enabled)
     )
-    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/profile#documents", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/profile/doc/{doc_id}/delete")
@@ -256,7 +256,7 @@ def doc_delete(
     service: ProfileService = Depends(get_profile_service),
 ) -> Response:
     service.delete_document(user, doc_id)
-    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/profile#documents", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.get("/profile/doc/{doc_id}/download")

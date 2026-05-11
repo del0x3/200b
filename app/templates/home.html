@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 {% block title %}О чём поговорим — 200b{% endblock %}
 {% block topbar_right %}
-<form method="post" action="/logout"><button class="ghost" type="submit">Выйти</button></form>
+<nav class="topbar-nav">
+    <a href="/profile#documents" class="nav-link">Документы</a>
+    <a href="/profile" class="nav-link">Профиль</a>
+    <form method="post" action="/logout"><button class="ghost" type="submit">Выйти</button></form>
+</nav>
 {% endblock %}
 {% block content %}
 <div class="card" id="chat-card">
