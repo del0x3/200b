@@ -243,8 +243,59 @@ button.primary.big { width: 100%; padding: 14px 18px; font-size: 16px; }
 .nav-link:hover { color: var(--text); background: var(--surface-2); text-decoration: none; }
 .nav-upload { display: inline-flex; align-items: center; }
 
+/* ===== Навигация по разделам профиля ===== */
+.profile-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+}
+.profile-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 13px;
+    text-decoration: none;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.profile-nav-link:hover {
+    color: var(--text);
+    border-color: var(--border);
+    background: var(--surface-2);
+    text-decoration: none;
+}
+.profile-nav-count {
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 1px 7px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Smaller subset of action-btn for second-line operations */
+.action-btn.small-action {
+    padding: 9px 12px;
+    font-size: 13px;
+}
+
 /* ===== Секции на странице профиля ===== */
 .section-card { margin-top: 18px; }
+.card[id], .section-card[id] { scroll-margin-top: 80px; }
 .section-card h2 {
     font-size: 20px;
     margin: 0 0 6px;

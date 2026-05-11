@@ -8,8 +8,15 @@
 {% endblock %}
 {% block content %}
 
+<nav class="profile-nav">
+    <a href="#portrait" class="profile-nav-link">Портрет</a>
+    <a href="#documents" class="profile-nav-link">Документы<span class="profile-nav-count">{{ documents|length }}</span></a>
+    <a href="#prompts" class="profile-nav-link">Указания<span class="profile-nav-count">{{ prompts|length }}</span></a>
+    <a href="#links" class="profile-nav-link">Ресурсы<span class="profile-nav-count">{{ links|length }}</span></a>
+</nav>
+
 <!-- === Карточка 1: Портрет === -->
-<div class="card">
+<div class="card" id="portrait">
     <h1>Твой портрет</h1>
     <p class="muted">Это тот же текст, который ушёл в нейронку. Можешь править свободно — добавлять, удалять, перефразировать. Сохрани — и со следующего ответа нейронка увидит обновления.</p>
     {% if rejected %}
@@ -44,7 +51,7 @@
 </div>
 
 <!-- === Карточка 2: Пользовательские промпты === -->
-<div class="card section-card">
+<div class="card section-card" id="prompts">
     <h2>Кастомные указания</h2>
     <p class="muted">Постоянные правила для нейронки — стиль, табу, формат вопросов. Приклеиваются к каждому чату. Можно временно выключать.</p>
 
@@ -114,7 +121,7 @@
 </div>
 
 <!-- === Карточка: Документы (длинные MD-знания об авторе) === -->
-<div class="card section-card">
+<div class="card section-card" id="documents">
     <h2>Документы</h2>
     <p class="muted">Длинные MD-тексты про тебя: биография, стиль письма, описание ниши, бизнес-модель — что угодно. Нейронка читает все включённые документы перед каждым вопросом. Лимита по количеству нет.</p>
 
@@ -184,7 +191,7 @@
 </div>
 
 <!-- === Карточка 3: Ресурсы (ссылки) === -->
-<div class="card section-card">
+<div class="card section-card" id="links">
     <h2>Ресурсы</h2>
     <p class="muted">Ссылки на твои внешние площадки — блог, канал, портфолио. Нейронка не вставит их в вопрос, но учтёт как контекст.</p>
 

@@ -21,7 +21,11 @@ def test_home_page_authed(authed_client: TestClient) -> None:
     assert r.status_code == 200
     # Home shows the topic-input prompt and the portrait CTA
     assert "тему дня" in r.text.lower() or "о чём хочешь" in r.text.lower()
-    assert "Редактировать портрет" in r.text  # the fix from previous turn
+    # The home page must surface all three context areas, not just the portrait.
+    assert "Портрет" in r.text
+    assert "MD-документы" in r.text
+    assert "Указания и ссылки" in r.text
+    assert "/profile#documents" in r.text
     # The single topic form should expose BOTH actions: new thematic session and global.
     assert 'hx-post="/chat/start"' in r.text
     assert 'hx-post="/chat/global/start"' in r.text
@@ -35,6 +39,13 @@ def test_profile_page_authed(authed_client: TestClient) -> None:
     assert "Твой портрет" in r.text
     assert "Кастомные указания" in r.text
     assert "Ресурсы" in r.text
+    # New: dedicated Documents section + anchored quick-nav
+    assert 'id="portrait"' in r.text
+    assert 'id="documents"' in r.text
+    assert 'id="prompts"' in r.text
+    assert 'id="links"' in r.text
+    assert 'class="profile-nav"' in r.text
+    assert "Документы" in r.text
 
 
 def test_profile_download_authed(authed_client: TestClient) -> None:

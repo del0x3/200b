@@ -42,17 +42,23 @@
         </ul>
         {% endif %}
 
-        <div class="divider"><span>твой портрет</span></div>
-        <p class="muted" style="margin: 0 0 10px;">Текст о тебе, который нейронка использует как контекст для всех вопросов.</p>
+        <div class="divider"><span>твой контекст для нейронки</span></div>
+        <p class="muted" style="margin: 0 0 10px;">Всё, что нейронка читает перед каждым вопросом — портрет, MD-документы (биография, стиль, ниша), правила и ссылки.</p>
         <div class="action-grid">
-            <a href="/profile" class="action-btn">
-                <span>Редактировать портрет</span>
+            <a href="/profile#portrait" class="action-btn">
+                <span>Портрет</span>
             </a>
-            <a href="/profile/download" class="action-btn">
-                <span>Скачать .md</span>
+            <a href="/profile#documents" class="action-btn">
+                <span>MD-документы</span>
             </a>
-            <label class="action-btn">
-                <span>Загрузить .md</span>
+            <a href="/profile#prompts" class="action-btn">
+                <span>Указания и ссылки</span>
+            </a>
+            <a href="/profile/download" class="action-btn small-action">
+                <span>Скачать портрет .md</span>
+            </a>
+            <label class="action-btn small-action">
+                <span>Загрузить портрет .md</span>
                 <form id="upload-md" method="post" action="/profile/upload" enctype="multipart/form-data" class="hidden">
                     <input type="file" name="file" accept=".md,.markdown,text/markdown,text/plain" onchange="this.form.submit()">
                 </form>
