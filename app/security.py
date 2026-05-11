@@ -5,6 +5,7 @@ import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
+import bcrypt
 import jwt
 from fastapi import Cookie, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
@@ -27,17 +28,38 @@ class PasswordHash:
 
 
 class PasswordHasher:
-    SALT_BYTES: int = 16
+    """bcrypt с прозрачным апгрейдом старых sha256-хешей.
+
+    Колонки в БД (password_hash, password_salt) сохранены для совместимости:
+    - bcrypt: hash_hex = bcrypt-строка ($2b$...), salt_hex = "" (bcrypt хранит соль в хеше).
+    - legacy sha256: hash_hex = sha256-hex, salt_hex = hex-соль (16 байт).
+    """
+
+    BCRYPT_ROUNDS: int = 12
+    LEGACY_SALT_BYTES: int = 16
 
     def hash(self, password: str) -> PasswordHash:
-        salt: bytes = secrets.token_bytes(self.SALT_BYTES)
-        digest: str = hashlib.sha256(salt + password.encode("utf-8")).hexdigest()
-        return PasswordHash(hash_hex=digest, salt_hex=salt.hex())
+        bcrypt_hash: bytes = bcrypt.hashpw(
+            password.encode("utf-8"), bcrypt.gensalt(rounds=self.BCRYPT_ROUNDS)
+        )
+        return PasswordHash(hash_hex=bcrypt_hash.decode("ascii"), salt_hex="")
 
     def verify(self, password: str, hash_hex: str, salt_hex: str) -> bool:
-        salt: bytes = bytes.fromhex(salt_hex)
+        if hash_hex.startswith("$2"):
+            try:
+                return bcrypt.checkpw(password.encode("utf-8"), hash_hex.encode("ascii"))
+            except ValueError:
+                return False
+        # legacy sha256 + per-user salt
+        try:
+            salt: bytes = bytes.fromhex(salt_hex)
+        except ValueError:
+            return False
         candidate: str = hashlib.sha256(salt + password.encode("utf-8")).hexdigest()
         return secrets.compare_digest(candidate, hash_hex)
+
+    def needs_rehash(self, hash_hex: str) -> bool:
+        return not hash_hex.startswith("$2")
 
 
 class JwtService:

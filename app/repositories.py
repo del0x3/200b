@@ -35,6 +35,11 @@ class UserRepository:
         user.profile_md = profile_md
         self._db.commit()
 
+    def set_password(self, user: User, password_hash: str, password_salt: str) -> None:
+        user.password_hash = password_hash
+        user.password_salt = password_salt
+        self._db.commit()
+
     def set_onboarding_complete(self, user: User, complete: bool) -> None:
         user.onboarding_complete = complete
         self._db.commit()

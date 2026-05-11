@@ -60,6 +60,9 @@ class AuthService:
             raise InvalidCredentialsError("неверный email или пароль")
         if not self._hasher.verify(password, user.password_hash, user.password_salt):
             raise InvalidCredentialsError("неверный email или пароль")
+        if self._hasher.needs_rehash(user.password_hash):
+            ph = self._hasher.hash(password)
+            self._users.set_password(user, ph.hash_hex, ph.salt_hex)
         token = self._jwt.issue(user.id)
         return AuthResult(user=user, token=token)
 
