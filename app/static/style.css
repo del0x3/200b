@@ -239,6 +239,36 @@ button.primary.big { width: 100%; padding: 14px 18px; font-size: 16px; }
 .nav-link:hover { color: var(--text); background: var(--surface-2); text-decoration: none; }
 .nav-upload { display: inline-flex; align-items: center; }
 
+/* ===== Лоадер между вопросами ===== */
+.loader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    color: var(--muted);
+    font-size: 14px;
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.18s ease, max-height 0.18s ease;
+}
+.loader.htmx-request,
+.htmx-request.loader {
+    opacity: 1;
+    max-height: 60px;
+}
+.spinner {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--surface-2);
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-text { line-height: 1.2; }
+
 /* ===== Адаптив ===== */
 
 @media (max-width: 768px) {

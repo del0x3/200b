@@ -12,9 +12,14 @@
               hx-target="#chat-card"
               hx-swap="innerHTML"
               hx-disabled-elt="find button"
+              hx-indicator="#start-loader"
               class="stack">
             <textarea name="topic" rows="4" required autofocus placeholder="Например: как я учился готовить рамен по ночам"></textarea>
             <button type="submit" class="primary big">Начать</button>
+            <div class="loader" id="start-loader" aria-live="polite" aria-hidden="true">
+                <span class="spinner"></span>
+                <span class="loader-text">формулирую первый вопрос…</span>
+            </div>
         </form>
         <div class="divider"><span>портрет</span></div>
         <div class="action-grid">
