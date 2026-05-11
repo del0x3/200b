@@ -53,8 +53,18 @@
         <div class="stream-status muted" id="stream-status"></div>
         <div class="stream-buffer" id="stream-buffer" aria-live="polite"></div>
         <div class="stream-hint muted">
-            В непрерывном режиме ответ улетает сам через 3.5 сек тишины. Или скажи «<b>дальше</b>» — улетит мгновенно.
+            В непрерывном режиме ответ улетает сам через 3.5 сек тишины. Или скажи одно из стоп-слов — улетит мгновенно.
         </div>
+
+        <details class="stream-triggers" id="stream-triggers">
+            <summary>Стоп-слова <span class="muted small" id="trigger-summary"></span></summary>
+            <ul class="trigger-list" id="trigger-list" aria-label="Текущие стоп-слова"></ul>
+            <form class="trigger-add" id="trigger-add-form">
+                <input type="text" id="trigger-add-input" placeholder="например: хватит" maxlength="40" autocomplete="off">
+                <button type="submit" class="primary small">Добавить</button>
+                <button type="button" class="ghost small" id="trigger-reset" title="Вернуть стандартные стоп-слова">Сбросить</button>
+            </form>
+        </details>
     </div>
     {% endif %}
 
@@ -119,7 +129,25 @@
     }
 
     const SILENCE_MS = 3500;
-    const TRIGGERS = ['дальше', 'следующий', 'следующее', 'всё', 'все'];
+    // 'все' выброшено из дефолтов — слишком частое в обычной речи, давало ложные срабатывания.
+    const DEFAULT_TRIGGERS = ['дальше', 'следующий', 'следующее', 'всё'];
+    const TRIGGERS_KEY = '200b:stream_triggers';
+
+    function loadTriggers() {
+        try {
+            const raw = localStorage.getItem(TRIGGERS_KEY);
+            if (!raw) return DEFAULT_TRIGGERS.slice();
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) return DEFAULT_TRIGGERS.slice();
+            return parsed.filter(t => typeof t === 'string' && t.trim()).map(t => t.trim().toLowerCase());
+        } catch (e) {
+            return DEFAULT_TRIGGERS.slice();
+        }
+    }
+    function saveTriggers(arr) {
+        try { localStorage.setItem(TRIGGERS_KEY, JSON.stringify(arr)); } catch (e) {}
+    }
+    let TRIGGERS = loadTriggers();
 
     const state = {
         active: false,
@@ -234,6 +262,12 @@
     }
 
     function startRec() {
+        // Если где-то на странице крутится одиночный recognizer (mic-кнопка в форме) —
+        // погасить его, иначе Chrome тут же абортит наш continuous.
+        if (window._activeRecognition) {
+            try { window._activeRecognition.abort(); } catch (e) {}
+            window._activeRecognition = null;
+        }
         const rec = new SR();
         rec.lang = 'ru-RU';
         rec.continuous = true;
@@ -266,6 +300,7 @@
         try {
             rec.start();
             state.rec = rec;
+            window._activeRecognition = rec;
         } catch (e) {
             statusEl.textContent = 'Не удалось запустить запись: ' + e.message;
         }
@@ -285,6 +320,7 @@
         clearSilence();
         if (state.rec) {
             try { state.rec.abort(); } catch (e) {}
+            if (window._activeRecognition === state.rec) window._activeRecognition = null;
             state.rec = null;
         }
         setUi('idle', '');
@@ -295,6 +331,73 @@
     btn.addEventListener('click', () => {
         if (state.active) stopStream(); else startStream();
     });
+
+    // ---- Управление пользовательскими стоп-словами ----
+    const listEl = document.getElementById('trigger-list');
+    const formEl = document.getElementById('trigger-add-form');
+    const inputEl = document.getElementById('trigger-add-input');
+    const resetBtn = document.getElementById('trigger-reset');
+    const summaryEl = document.getElementById('trigger-summary');
+
+    function renderTriggers() {
+        if (!listEl) return;
+        listEl.innerHTML = '';
+        if (TRIGGERS.length === 0) {
+            const li = document.createElement('li');
+            li.className = 'trigger-empty muted small';
+            li.textContent = 'Список пуст — отправка только по тишине.';
+            listEl.appendChild(li);
+        } else {
+            for (const word of TRIGGERS) {
+                const li = document.createElement('li');
+                li.className = 'trigger-item';
+                const span = document.createElement('span');
+                span.textContent = word;
+                const btnDel = document.createElement('button');
+                btnDel.type = 'button';
+                btnDel.className = 'trigger-del';
+                btnDel.setAttribute('aria-label', 'Удалить ' + word);
+                btnDel.title = 'Удалить';
+                btnDel.textContent = '×';
+                btnDel.addEventListener('click', () => {
+                    TRIGGERS = TRIGGERS.filter(w => w !== word);
+                    saveTriggers(TRIGGERS);
+                    renderTriggers();
+                });
+                li.appendChild(span);
+                li.appendChild(btnDel);
+                listEl.appendChild(li);
+            }
+        }
+        if (summaryEl) {
+            summaryEl.textContent = '· ' + TRIGGERS.length + ' шт.';
+        }
+    }
+
+    if (formEl && inputEl) {
+        formEl.addEventListener('submit', (ev) => {
+            ev.preventDefault();
+            const raw = (inputEl.value || '').trim().toLowerCase();
+            if (!raw) return;
+            if (raw.length > 40) return;
+            if (TRIGGERS.includes(raw)) {
+                inputEl.value = '';
+                return;
+            }
+            TRIGGERS = TRIGGERS.concat([raw]);
+            saveTriggers(TRIGGERS);
+            inputEl.value = '';
+            renderTriggers();
+        });
+    }
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            TRIGGERS = DEFAULT_TRIGGERS.slice();
+            saveTriggers(TRIGGERS);
+            renderTriggers();
+        });
+    }
+    renderTriggers();
 
     // Если юзер уходит со страницы — гасим recognition
     window.addEventListener('pagehide', stopStream);

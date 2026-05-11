@@ -142,13 +142,21 @@ def prompt_download(
     user: User = Depends(current_user),
     service: ProfileService = Depends(get_profile_service),
 ) -> Response:
+    from urllib.parse import quote
+
     for p in service.list_prompts(user):
         if p.id == prompt_id:
-            safe_title = (p.title or "prompt").replace('"', '')
+            raw_title = (p.title or "prompt").replace('"', '')
+            ascii_fallback = raw_title.encode("ascii", "replace").decode("ascii").replace("?", "_")
+            quoted = quote(raw_title, safe="")
+            disposition = (
+                f'attachment; filename="{ascii_fallback}.md"; '
+                f"filename*=UTF-8''{quoted}.md"
+            )
             return Response(
                 content=p.content,
                 media_type="text/markdown; charset=utf-8",
-                headers={"Content-Disposition": f'attachment; filename="{safe_title}.md"'},
+                headers={"Content-Disposition": disposition},
             )
     return Response(content="Не найдено.", status_code=404)
 

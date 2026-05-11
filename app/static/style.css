@@ -259,33 +259,45 @@ button.primary.big { width: 100%; padding: 14px 18px; font-size: 16px; }
     background: var(--surface-2);
     position: relative;
 }
-.ctx-form { gap: 8px; }
-.ctx-title-input {
-    flex: 1;
-    margin-right: 12px;
-}
+.ctx-form { gap: 10px; }
+.ctx-form label { display: block; }
 .ctx-toggle {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     font-size: 13px;
     color: var(--muted);
     cursor: pointer;
     user-select: none;
 }
 .ctx-toggle input { width: auto; margin: 0; }
-.ctx-delete {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    margin: 0;
+.ctx-toggle:has(input:checked) { color: var(--text); }
+
+.ctx-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 4px;
 }
-.ctx-delete button.danger {
+.ctx-footer-end { justify-content: flex-end; }
+.ctx-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+button.danger {
     border-color: var(--bad);
     color: var(--bad);
 }
-.ctx-delete button.danger:hover {
-    background: rgba(255, 91, 107, 0.08);
+button.danger:hover { background: rgba(255, 91, 107, 0.08); }
+
+@media (max-width: 480px) {
+    .ctx-footer { gap: 8px; }
+    .ctx-actions { width: 100%; justify-content: flex-end; }
 }
 
 button.small, .action-btn.small {
@@ -479,6 +491,64 @@ button.small, .action-btn.small {
     line-height: 1.4;
 }
 .stream-hint b { color: var(--text); font-weight: 600; }
+
+/* ===== Управление стоп-словами в стриминге ===== */
+.stream-triggers {
+    margin-top: 4px;
+    font-size: 13px;
+}
+.stream-triggers > summary {
+    cursor: pointer;
+    color: var(--muted);
+    padding: 4px 0;
+    list-style: revert;
+}
+.stream-triggers[open] > summary { color: var(--text); }
+.trigger-list {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.trigger-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px 4px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 13px;
+}
+.trigger-empty { padding: 4px 0; }
+.trigger-del {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1;
+    border-radius: 50%;
+    cursor: pointer;
+}
+.trigger-del:hover { color: var(--bad); background: rgba(255, 91, 107, 0.10); }
+.trigger-add {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-top: 4px;
+}
+.trigger-add input {
+    flex: 1;
+    min-width: 140px;
+    padding: 8px 12px;
+    font-size: 13px;
+}
 
 /* ===== Ответ на вопрос + микрофон ===== */
 .answer-form {

@@ -48,9 +48,12 @@ def submit_answer(
         form = OnboardingAnswerForm(question_key=question_key, answer_text=answer_text)
     except ValidationError:
         return Response(content="Ответ не может быть пустым.", status_code=400)
-    progress = service.save_answer(
-        user=user, question_key=form.question_key, answer_text=form.answer_text
-    )
+    try:
+        progress = service.save_answer(
+            user=user, question_key=form.question_key, answer_text=form.answer_text
+        )
+    except ValueError:
+        return Response(content="Неизвестный вопрос.", status_code=400)
     if progress.is_complete:
         response = Response(status_code=204)
         response.headers["HX-Redirect"] = "/"
