@@ -20,12 +20,88 @@
 <div class="card">
     <h1>Твой портрет</h1>
     <p class="muted">Это тот же текст, который ушёл в нейронку. Можешь править свободно — добавлять, удалять, перефразировать. Сохрани — и со следующего ответа нейронка увидит обновления.</p>
-    <form method="post" action="/profile" class="stack">
-        <textarea name="profile_md" class="md-editor" rows="28" spellcheck="false">{{ profile_md }}</textarea>
-        <div class="row">
-            <button type="submit" class="primary">Сохранить</button>
-            {% if saved %}<span class="muted saved-flash">сохранено</span>{% endif %}
+    {% if rejected %}
+    <div class="error" id="reject-banner">
+        Изменения не сохранены: новый текст слишком короткий по сравнению с прежним. Это защита от случайного стирания. Если правда хочешь — допиши хотя бы половину объёма и сохрани ещё раз. Твой набранный вариант лежит в черновике ниже.
+    </div>
+    {% endif %}
+    <form method="post" action="/profile" class="stack" id="profile-form">
+        <textarea name="profile_md" class="md-editor" rows="28" spellcheck="false" id="profile-md"
+                  data-server-text="{{ profile_md|e }}"
+                  {% if rejected %}data-rejected-text="{{ rejected_text|e }}"{% endif %}>{{ profile_md }}</textarea>
+        <div class="row spread">
+            <div class="row">
+                <button type="submit" class="primary">Сохранить</button>
+                <span class="muted" id="autosave-status">черновик локальный: —</span>
+            </div>
+            <button type="button" class="ghost" id="restore-server" title="Откатить к тексту с сервера">Откатить к сохранённому</button>
         </div>
     </form>
 </div>
+<script>
+(function () {
+    const ta = document.getElementById("profile-md");
+    const form = document.getElementById("profile-form");
+    const status = document.getElementById("autosave-status");
+    const restoreBtn = document.getElementById("restore-server");
+    if (!ta || !form) return;
+
+    const KEY = "200b:profile_draft";
+    const serverText = ta.dataset.serverText || "";
+    const rejectedText = ta.dataset.rejectedText;
+    let dirty = false;
+
+    if (rejectedText !== undefined) {
+        ta.value = rejectedText;
+        dirty = true;
+    } else {
+        try {
+            const draft = localStorage.getItem(KEY);
+            if (draft !== null && draft !== serverText) {
+                if (confirm("Найден несохранённый черновик портрета с прошлой сессии. Восстановить его?\n(ОК — восстановить, Отмена — оставить серверный вариант)")) {
+                    ta.value = draft;
+                    dirty = true;
+                } else {
+                    localStorage.removeItem(KEY);
+                }
+            }
+        } catch (e) { /* localStorage недоступен — пропускаем */ }
+    }
+
+    function setStatus(text) { if (status) status.textContent = text; }
+
+    let saveTimer = null;
+    ta.addEventListener("input", function () {
+        dirty = ta.value !== serverText;
+        if (saveTimer) clearTimeout(saveTimer);
+        saveTimer = setTimeout(function () {
+            try {
+                localStorage.setItem(KEY, ta.value);
+                const t = new Date();
+                setStatus("черновик локальный: " + t.toLocaleTimeString());
+            } catch (e) { setStatus("черновик локальный: не сохранился"); }
+        }, 800);
+    });
+
+    form.addEventListener("submit", function () {
+        try { localStorage.removeItem(KEY); } catch (e) {}
+        dirty = false;
+    });
+
+    if (restoreBtn) {
+        restoreBtn.addEventListener("click", function () {
+            if (!dirty || confirm("Откатить к серверному варианту? Локальный черновик удалится.")) {
+                ta.value = serverText;
+                dirty = false;
+                try { localStorage.removeItem(KEY); } catch (e) {}
+                setStatus("черновик локальный: —");
+            }
+        });
+    }
+
+    window.addEventListener("beforeunload", function (e) {
+        if (dirty) { e.preventDefault(); e.returnValue = ""; }
+    });
+})();
+</script>
 {% endblock %}

@@ -238,3 +238,36 @@ button.primary.big { width: 100%; padding: 14px 18px; font-size: 16px; }
 }
 .nav-link:hover { color: var(--text); background: var(--surface-2); text-decoration: none; }
 .nav-upload { display: inline-flex; align-items: center; }
+
+/* ===== Адаптив ===== */
+
+@media (max-width: 768px) {
+    .container { margin: 24px auto; padding: 0 16px; }
+    .topbar { padding: 12px 16px; }
+    .card { padding: 22px; border-radius: 14px; }
+    h1 { font-size: 24px; }
+    h2.question { font-size: 19px; margin: 10px 0 18px; }
+    .topbar-nav { gap: 10px; }
+    .nav-link { font-size: 13px; padding: 6px 8px; }
+    .md-editor { min-height: 420px; font-size: 15px; padding: 16px 18px; }
+    .actions { gap: 8px; }
+    .actions button { flex: 1 1 calc(50% - 4px); }
+}
+
+@media (max-width: 480px) {
+    .container { margin: 16px auto; padding: 0 12px; }
+    .topbar { padding: 10px 12px; }
+    .card { padding: 16px; border-radius: 12px; }
+    h1 { font-size: 21px; line-height: 1.25; }
+    h2.question { font-size: 17px; }
+    .brand { font-size: 16px; }
+    .topbar-nav { gap: 6px; }
+    .topbar-nav .nav-link { padding: 5px 7px; font-size: 12px; }
+    .topbar-nav form button { font-size: 13px; padding: 7px 11px; }
+    button { padding: 10px 14px; font-size: 14px; }
+    button.primary.big { padding: 12px 16px; font-size: 15px; }
+    .md-editor { min-height: 360px; font-size: 15px; padding: 14px 14px; line-height: 1.55; }
+    .actions { gap: 6px; }
+    .actions button { flex: 1 1 100%; }
+    .row.spread { gap: 8px; }
+}

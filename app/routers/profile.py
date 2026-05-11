@@ -28,6 +28,9 @@ def profile_page(
     )
 
 
+MIN_PROFILE_RATIO: float = 0.5
+
+
 @router.post("/profile")
 def profile_save(
     request: Request,
@@ -37,12 +40,23 @@ def profile_save(
 ) -> Response:
     if not user.onboarding_complete:
         return RedirectResponse(url="/onboarding", status_code=status.HTTP_303_SEE_OTHER)
+
+    new_text: str = profile_md.strip()
+    old_text: str = (user.profile_md or "").strip()
+    if old_text and (not new_text or len(new_text) < len(old_text) * MIN_PROFILE_RATIO):
+        return templates.TemplateResponse(
+            request,
+            "profile.html",
+            {
+                "profile_md": user.profile_md,
+                "rejected": True,
+                "rejected_text": profile_md,
+            },
+            status_code=409,
+        )
+
     service.save_markdown(user, profile_md)
-    return templates.TemplateResponse(
-        request,
-        "profile.html",
-        {"profile_md": profile_md, "saved": True},
-    )
+    return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.get("/profile/download")
