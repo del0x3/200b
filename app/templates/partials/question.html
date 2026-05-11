@@ -1,0 +1,29 @@
+<div class="qblock">
+    <div class="question-label">Вопрос</div>
+    <h2 class="question">{{ question_text }}</h2>
+    <div class="actions">
+        <form hx-post="/chat/feedback"
+              hx-target="#chat-card"
+              hx-swap="innerHTML"
+              hx-disabled-elt="closest .actions button">
+            <input type="hidden" name="question_id" value="{{ question_id }}">
+            <input type="hidden" name="feedback" value="like">
+            <button type="submit" class="good">👍 Нравится — дальше</button>
+        </form>
+        <form hx-post="/chat/feedback"
+              hx-target="#chat-card"
+              hx-swap="innerHTML"
+              hx-disabled-elt="closest .actions button">
+            <input type="hidden" name="question_id" value="{{ question_id }}">
+            <input type="hidden" name="feedback" value="dislike">
+            <button type="submit" class="bad">👎 Не нравится — дальше</button>
+        </form>
+        <form hx-post="/chat/pivot"
+              hx-target="#chat-card"
+              hx-swap="innerHTML"
+              hx-disabled-elt="closest .actions button">
+            <input type="hidden" name="session_id" value="{{ session_id }}">
+            <button type="submit" class="ghost">🔄 Другое направление</button>
+        </form>
+    </div>
+</div>

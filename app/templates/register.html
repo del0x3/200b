@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Регистрация — 200b{% endblock %}
+{% block content %}
+<div class="card narrow">
+    <h1>Регистрация</h1>
+    <form method="post" action="/register" class="stack">
+        <label>
+            <span>Email</span>
+            <input type="email" name="email" required autocomplete="email">
+        </label>
+        <label>
+            <span>Пароль (мин. 4 символа)</span>
+            <input type="password" name="password" required minlength="4" autocomplete="new-password">
+        </label>
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        <button type="submit" class="primary">Создать аккаунт</button>
+    </form>
+    <p class="muted">Уже есть аккаунт? <a href="/login">Войти</a></p>
+</div>
+{% endblock %}

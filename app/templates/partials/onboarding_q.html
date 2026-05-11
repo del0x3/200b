@@ -1,0 +1,15 @@
+<div class="qblock" id="onboarding-slot">
+    <div class="progress">
+        <span>{{ answered }} / {{ total }}</span>
+        <div class="bar"><div class="bar-fill" style="width: {{ (answered * 100 / total) | round(0, 'floor') }}%"></div></div>
+    </div>
+    <h2 class="question">{{ question.text }}</h2>
+    <form hx-post="/onboarding/answer"
+          hx-target="#onboarding-slot"
+          hx-swap="outerHTML"
+          class="stack">
+        <input type="hidden" name="question_key" value="{{ question.key }}">
+        <textarea name="answer_text" rows="5" required autofocus placeholder="Пиши свободно..."></textarea>
+        <button type="submit" class="primary">Дальше</button>
+    </form>
+</div>

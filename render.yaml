@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: 200b-web
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_URL
+        fromDatabase:
+          name: 200b-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: ENV
+        value: production
+
+databases:
+  - name: 200b-db
+    plan: free

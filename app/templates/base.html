@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}200b{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@2/dist/htmx.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+<header class="topbar">
+    <a href="/" class="brand">200b</a>
+    {% block topbar_right %}{% endblock %}
+</header>
+<main class="container">
+    {% block content %}{% endblock %}
+</main>
+</body>
+</html>

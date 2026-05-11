@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}О чём поговорим — 200b{% endblock %}
+{% block topbar_right %}
+<form method="post" action="/logout"><button class="ghost" type="submit">Выйти</button></form>
+{% endblock %}
+{% block content %}
+<div class="card" id="chat-card">
+    <div id="topic-form">
+        <h1>О чём хотите поговорить сегодня?</h1>
+        <p class="muted">Опиши тему дня в одном-двух предложениях. Нейронка задаст наводящие вопросы — твоя задача отвечать и отмечать, что заходит, а что нет.</p>
+        <form hx-post="/chat/start"
+              hx-target="#chat-card"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button"
+              class="stack">
+            <textarea name="topic" rows="4" required autofocus placeholder="Например: как я учился готовить рамен по ночам"></textarea>
+            <button type="submit" class="primary big">Начать</button>
+        </form>
+        <div class="divider"><span>портрет</span></div>
+        <div class="action-grid">
+            <a href="/profile" class="action-btn">
+                <span class="emoji">✎</span><span>Редактировать</span>
+            </a>
+            <a href="/profile/download" class="action-btn">
+                <span class="emoji">⬇</span><span>Скачать .md</span>
+            </a>
+            <label class="action-btn">
+                <span class="emoji">⬆</span><span>Загрузить .md</span>
+                <form id="upload-md" method="post" action="/profile/upload" enctype="multipart/form-data" class="hidden">
+                    <input type="file" name="file" accept=".md,.markdown,text/markdown,text/plain" onchange="this.form.submit()">
+                </form>
+                <input type="file" accept=".md,.markdown,text/markdown,text/plain" class="hidden-file"
+                       onchange="const f=document.getElementById('upload-md'); f.querySelector('input[type=file]').files=this.files; f.submit();">
+            </label>
+        </div>
+    </div>
+</div>
+{% endblock %}

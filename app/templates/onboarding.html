@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Знакомство — 200b{% endblock %}
+{% block topbar_right %}
+<form method="post" action="/logout"><button class="ghost" type="submit">Выйти</button></form>
+{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>Расскажи о себе</h1>
+    <p class="muted">20 вопросов, чтобы нейронка знала кто ты. Ответы можно писать как угодно — главное честно.</p>
+    <div id="onboarding-slot">
+        {% include "partials/onboarding_q.html" %}
+    </div>
+</div>
+{% endblock %}

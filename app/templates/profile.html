@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Профиль — 200b{% endblock %}
+{% block topbar_right %}
+<nav class="topbar-nav">
+    <a href="/" class="nav-link">Главная</a>
+    <a href="/profile/download" class="nav-link">⬇ Скачать</a>
+    <label class="nav-link nav-upload">
+        ⬆ Загрузить
+        <form method="post" action="/profile/upload" enctype="multipart/form-data" class="hidden" id="profile-upload-form">
+            <input type="file" name="file" accept=".md,.markdown,text/markdown,text/plain"
+                   onchange="this.form.submit()">
+        </form>
+        <input type="file" accept=".md,.markdown,text/markdown,text/plain" class="hidden-file"
+               onchange="const f=document.getElementById('profile-upload-form'); f.querySelector('input[type=file]').files=this.files; f.submit();">
+    </label>
+    <form method="post" action="/logout"><button class="ghost" type="submit">Выйти</button></form>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="card">
+    <h1>Твой портрет</h1>
+    <p class="muted">Это тот же текст, который ушёл в нейронку. Можешь править свободно — добавлять, удалять, перефразировать. Сохрани — и со следующего ответа нейронка увидит обновления.</p>
+    <form method="post" action="/profile" class="stack">
+        <textarea name="profile_md" class="md-editor" rows="28" spellcheck="false">{{ profile_md }}</textarea>
+        <div class="row">
+            <button type="submit" class="primary">Сохранить</button>
+            {% if saved %}<span class="muted saved-flash">сохранено</span>{% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}
