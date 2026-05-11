@@ -1,3 +1,5 @@
+"""Password hashing, JWT issuing/decoding, and FastAPI auth dependencies."""
+
 from __future__ import annotations
 
 import hashlib
@@ -23,6 +25,16 @@ JWT_TTL_DAYS: int = 30
 
 @dataclass(frozen=True)
 class PasswordHash:
+    """Result of hashing a password.
+
+    Attributes:
+        hash_hex: The hash value as stored in the DB. For bcrypt this is
+            the full bcrypt string starting with ``$2``; for the legacy
+            sha256 scheme this is the 64-char hex digest.
+        salt_hex: Hex-encoded salt for the legacy scheme. Empty string for
+            bcrypt (bcrypt stores its salt inside the hash itself).
+    """
+
     hash_hex: str
     salt_hex: str
 
@@ -63,6 +75,13 @@ class PasswordHasher:
 
 
 class JwtService:
+    """Issues and verifies short-lived JWT session tokens.
+
+    Tokens carry only `sub` (user id), `iat`, and `exp`. The secret comes
+    from ``settings.jwt_secret`` (Render generates a random one via
+    `render.yaml`'s `generateValue: true`).
+    """
+
     def __init__(self, secret: str, algorithm: str = JWT_ALGORITHM, ttl_days: int = JWT_TTL_DAYS) -> None:
         self._secret: str = secret
         self._algorithm: str = algorithm
@@ -109,6 +128,8 @@ def clear_auth_cookie(response) -> None:
 
 
 class RedirectToLogin(HTTPException):
+    """Marker exception. The global handler in `main.py` turns it into a 303 → /login."""
+
     def __init__(self) -> None:
         super().__init__(status_code=status.HTTP_401_UNAUTHORIZED, detail="auth-required")
 

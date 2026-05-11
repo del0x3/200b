@@ -1,3 +1,5 @@
+"""Profile routes: portrait MD CRUD, custom prompts CRUD, resource links CRUD."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status

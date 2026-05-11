@@ -1,3 +1,9 @@
+"""Application services: orchestrate repositories, hashing, and the LLM client.
+
+Routers should depend on services, never on repositories directly. Services
+own all transactional boundaries and side effects.
+"""
+
 from __future__ import annotations
 
 import logging
@@ -21,24 +27,28 @@ logger = logging.getLogger(__name__)
 
 
 class AuthError(Exception):
-    pass
+    """Base class for all auth-related failures."""
 
 
 class EmailTakenError(AuthError):
-    pass
+    """Raised on register when the email is already in use."""
 
 
 class InvalidCredentialsError(AuthError):
-    pass
+    """Raised on login when email/password don't match a user."""
 
 
 @dataclass(frozen=True)
 class AuthResult:
+    """Outcome of a successful register/login: the user row + a fresh JWT."""
+
     user: User
     token: str
 
 
 class AuthService:
+    """Registration, login, and transparent password-hash upgrades."""
+
     def __init__(self, db: Session, hasher: PasswordHasher, jwt: JwtService) -> None:
         self._users: UserRepository = UserRepository(db)
         self._hasher: PasswordHasher = hasher
@@ -79,6 +89,8 @@ class OnboardingProgress:
 
 
 class OnboardingService:
+    """Drives the 20-question onboarding flow and the resulting profile MD."""
+
     def __init__(self, db: Session) -> None:
         self._users: UserRepository = UserRepository(db)
 
@@ -111,6 +123,12 @@ class OnboardingService:
 
 
 class ProfileService:
+    """Manages the user's portrait MD, custom prompts, and resource links.
+
+    Custom prompts and links are persistent context that gets appended to
+    every chat (both regular and global sessions).
+    """
+
     def __init__(self, db: Session) -> None:
         self._users: UserRepository = UserRepository(db)
         self._prompts: UserPromptRepository = UserPromptRepository(db)
@@ -191,6 +209,13 @@ class SessionView:
 
 
 class ChatService:
+    """Owns chat sessions, the per-session Q&A loop, and the global session.
+
+    Pulls the user's profile MD, custom prompts, links, and (for the global
+    session) prior cross-session Q&A. Composes everything into a prompt
+    via :class:`PromptBuilder` and calls DeepSeek to get the next question.
+    """
+
     def __init__(
         self,
         db: Session,

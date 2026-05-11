@@ -1,3 +1,5 @@
+"""Onboarding routes: stepped 20-question wizard powered by HTMX."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Form, Request, status

@@ -1,3 +1,12 @@
+"""Builds the LLM prompt for question generation.
+
+The system message holds invariant rules (form, content, anti-hallucination),
+while the user message is assembled per-call from the author's portrait,
+the current topic, the in-session Q&A history, optional cross-session
+prior experience (for the global session), and the user's own custom
+prompts and resource links.
+"""
+
 from __future__ import annotations
 
 from app.deepseek import ChatMessage
@@ -57,6 +66,12 @@ FALLBACK_QUESTION: str = "Что в этой теме задевает личн�
 
 
 class PromptBuilder:
+    """Pure function wrapper that composes the chat messages array.
+
+    Stateless and side-effect-free — easy to unit test by inspecting the
+    rendered text of the user message.
+    """
+
     def build(
         self,
         *,

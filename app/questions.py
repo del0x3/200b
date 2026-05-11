@@ -1,3 +1,5 @@
+"""The fixed list of 20 onboarding questions and lookup helpers."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -5,6 +7,14 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class OnboardingQuestion:
+    """One onboarding step.
+
+    Attributes:
+        key: Stable machine identifier used in form fields and MD markers.
+            Never shown to the user.
+        text: Human-readable question shown in the onboarding UI.
+    """
+
     key: str
     text: str
 

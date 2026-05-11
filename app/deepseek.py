@@ -1,3 +1,5 @@
+"""Thin async HTTP client around the DeepSeek chat-completions API."""
+
 from __future__ import annotations
 
 import logging
@@ -10,18 +12,27 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class ChatMessage:
+    """A single chat-completions message: role + text content."""
+
     role: str
     content: str
 
     def to_dict(self) -> dict[str, str]:
+        """Serialise to the wire format expected by DeepSeek."""
         return {"role": self.role, "content": self.content}
 
 
 class DeepSeekError(Exception):
-    pass
+    """Raised on any non-recoverable failure talking to DeepSeek."""
 
 
 class DeepSeekClient:
+    """Lazily-opened async HTTP client for `POST /v1/chat/completions`.
+
+    Holds a single `httpx.AsyncClient` for the lifetime of the FastAPI
+    process. Retries once on transient errors before raising.
+    """
+
     BASE_URL: str = "https://api.deepseek.com"
     MODEL: str = "deepseek-chat"
     DEFAULT_TIMEOUT: float = 30.0

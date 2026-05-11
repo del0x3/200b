@@ -1,3 +1,5 @@
+"""Chat routes: start/continue sessions, feedback, pivot, answer, global session."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Form, Request, status

@@ -1,3 +1,5 @@
+"""Parse/serialise the user portrait MD file (sectioned by question key)."""
+
 from __future__ import annotations
 
 import re

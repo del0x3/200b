@@ -1,3 +1,5 @@
+"""SQLAlchemy engine, session factory, and DI helper."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -9,10 +11,16 @@ from app.config import settings
 
 
 class Base(DeclarativeBase):
-    pass
+    """Declarative base used by all ORM models in the project."""
 
 
 class Database:
+    """Owns the SQLAlchemy engine and hands out per-request sessions.
+
+    Engine and session factory are created once at construction time and
+    reused for the lifetime of the application.
+    """
+
     def __init__(self, url: str) -> None:
         self._url: str = url
         connect_args: dict[str, object] = (

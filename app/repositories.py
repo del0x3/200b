@@ -1,3 +1,5 @@
+"""Data-access layer: thin wrappers over SQLAlchemy queries, one per aggregate."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -18,6 +20,8 @@ from app.models import (
 
 
 class UserRepository:
+    """CRUD over the `users` table."""
+
     def __init__(self, db: Session) -> None:
         self._db: Session = db
 
@@ -55,6 +59,8 @@ class UserRepository:
 
 
 class UserPromptRepository:
+    """CRUD over `user_prompts` (custom prompt fragments per user)."""
+
     def __init__(self, db: Session) -> None:
         self._db: Session = db
 
@@ -100,6 +106,8 @@ class UserPromptRepository:
 
 
 class UserLinkRepository:
+    """CRUD over `user_links` (external resource URLs per user)."""
+
     def __init__(self, db: Session) -> None:
         self._db: Session = db
 
@@ -134,6 +142,9 @@ class UserLinkRepository:
 
 
 class ChatRepository:
+    """CRUD over `chat_sessions`, `chat_questions`, `chat_answers`, and the
+    `user_global_sessions` marker table."""
+
     def __init__(self, db: Session) -> None:
         self._db: Session = db
 

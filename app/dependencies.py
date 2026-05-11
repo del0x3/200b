@@ -1,3 +1,5 @@
+"""FastAPI dependency providers — build services with a per-request DB session."""
+
 from __future__ import annotations
 
 from fastapi import Depends, Request

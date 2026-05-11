@@ -1,3 +1,5 @@
+"""Project-wide Jinja2 templates loader."""
+
 from __future__ import annotations
 
 from pathlib import Path

@@ -1,3 +1,5 @@
+"""SQLAlchemy ORM models for users, chat sessions, and user-owned context."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -10,6 +12,8 @@ from app.db import Base
 
 
 class Feedback(str, Enum):
+    """Reaction the user gives to a generated question."""
+
     LIKE = "like"
     DISLIKE = "dislike"
 

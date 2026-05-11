@@ -1,3 +1,5 @@
+"""FastAPI application factory: lifespan, router wiring, exception handlers."""
+
 from __future__ import annotations
 
 import logging

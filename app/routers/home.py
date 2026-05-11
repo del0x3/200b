@@ -1,3 +1,5 @@
+"""Home page: lists prior chat sessions and the new-session form."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request, status

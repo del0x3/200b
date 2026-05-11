@@ -1,3 +1,5 @@
+"""Auth routes: register, login, logout."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Form, Request, status
