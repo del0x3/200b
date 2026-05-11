@@ -127,6 +127,20 @@ class CurrentQuestion:
     question: ChatQuestion
 
 
+@dataclass(frozen=True)
+class SessionSummary:
+    session: ChatSession
+    questions_count: int
+
+
+@dataclass(frozen=True)
+class SessionView:
+    session: ChatSession
+    pairs: list[tuple[ChatQuestion, str | None]]
+    last_question: ChatQuestion | None
+    last_unanswered: ChatQuestion | None
+
+
 class ChatService:
     def __init__(
         self,
@@ -218,7 +232,38 @@ class ChatService:
             return FALLBACK_QUESTION
 
     def _lookup_question(self, user: User, question_id: int) -> ChatQuestion | None:
-        session = self._chat.latest_open_session(user.id)
+        return self._chat.get_question_owned_by(question_id=question_id, user_id=user.id)
+
+    def list_sessions(self, user: User) -> list[SessionSummary]:
+        return [
+            SessionSummary(session=s, questions_count=n)
+            for s, n in self._chat.list_user_sessions(user.id)
+        ]
+
+    def get_session_view(self, *, user: User, session_id: int) -> SessionView | None:
+        session = self._chat.get_session_owned_by(session_id=session_id, user_id=user.id)
         if session is None:
             return None
-        return self._chat.get_question(question_id=question_id, session_id=session.id)
+        questions: list[ChatQuestion] = self._chat.list_questions(session.id)
+        answers: dict[int, str] = self._chat.answers_by_question_id(session.id)
+        pairs: list[tuple[ChatQuestion, str | None]] = [
+            (q, answers.get(q.id)) for q in questions
+        ]
+        last_q = questions[-1] if questions else None
+        last_unanswered = (
+            last_q if last_q is not None and last_q.id not in answers else None
+        )
+        return SessionView(
+            session=session, pairs=pairs, last_question=last_q, last_unanswered=last_unanswered
+        )
+
+    async def continue_session(self, *, user: User, session_id: int) -> CurrentQuestion:
+        session = self._chat.get_session_owned_by(session_id=session_id, user_id=user.id)
+        if session is None:
+            raise ValueError("session not found")
+        questions: list[ChatQuestion] = self._chat.list_questions(session.id)
+        answers: dict[int, str] = self._chat.answers_by_question_id(session.id)
+        last_q: ChatQuestion | None = questions[-1] if questions else None
+        if last_q is not None and last_q.id not in answers:
+            return CurrentQuestion(session_id=session.id, question=last_q)
+        return await self._generate_next(user=user, session=session)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import ChatAnswer, ChatQuestion, ChatSession, Feedback, User
@@ -67,6 +67,30 @@ class ChatRepository:
             select(ChatSession)
             .where(ChatSession.user_id == user_id, ChatSession.closed_at.is_(None))
             .order_by(ChatSession.id.desc())
+        )
+
+    def list_user_sessions(self, user_id: int) -> list[tuple[ChatSession, int]]:
+        rows = self._db.execute(
+            select(ChatSession, func.count(ChatQuestion.id))
+            .outerjoin(ChatQuestion, ChatQuestion.session_id == ChatSession.id)
+            .where(ChatSession.user_id == user_id)
+            .group_by(ChatSession.id)
+            .order_by(ChatSession.id.desc())
+        ).all()
+        return [(s, int(n or 0)) for s, n in rows]
+
+    def get_session_owned_by(self, *, session_id: int, user_id: int) -> ChatSession | None:
+        return self._db.scalar(
+            select(ChatSession).where(
+                ChatSession.id == session_id, ChatSession.user_id == user_id
+            )
+        )
+
+    def get_question_owned_by(self, *, question_id: int, user_id: int) -> ChatQuestion | None:
+        return self._db.scalar(
+            select(ChatQuestion)
+            .join(ChatSession, ChatQuestion.session_id == ChatSession.id)
+            .where(ChatQuestion.id == question_id, ChatSession.user_id == user_id)
         )
 
     def list_questions(self, session_id: int) -> list[ChatQuestion]:

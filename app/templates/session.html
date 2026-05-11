@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Сессия — 200b{% endblock %}
+{% block topbar_right %}
+<nav class="topbar-nav">
+    <a href="/" class="nav-link">← На главную</a>
+    <form method="post" action="/logout"><button class="ghost" type="submit">Выйти</button></form>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="session-header">
+        <div class="muted small">тема сессии · {{ view.session.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+        <h1 class="session-title">{{ view.session.topic }}</h1>
+    </div>
+
+    {% if view.pairs %}
+    <ol class="qa-list">
+        {% for q, a in view.pairs %}
+        <li class="qa-item">
+            <div class="qa-q">
+                <span class="qa-marker">В</span>
+                <div class="qa-text">{{ q.question_text }}</div>
+                {% if q.feedback == 'like' %}<span class="qa-tag good">👍</span>
+                {% elif q.feedback == 'dislike' %}<span class="qa-tag bad">👎</span>{% endif %}
+            </div>
+            {% if a %}
+            <div class="qa-a">
+                <span class="qa-marker muted">О</span>
+                <div class="qa-text">{{ a }}</div>
+            </div>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ol>
+    {% else %}
+    <p class="muted">В этой сессии ещё нет вопросов.</p>
+    {% endif %}
+
+    <div class="divider"><span>продолжить</span></div>
+
+    <div id="chat-card">
+        <form hx-post="/chat/continue"
+              hx-target="#chat-card"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button"
+              hx-indicator="#continue-loader"
+              class="stack">
+            <input type="hidden" name="session_id" value="{{ view.session.id }}">
+            <button type="submit" class="primary big">
+                {% if view.last_unanswered %}Открыть последний вопрос{% else %}Сгенерировать следующий вопрос{% endif %}
+            </button>
+            <div class="loader" id="continue-loader" aria-live="polite" aria-hidden="true">
+                <span class="spinner"></span>
+                <span class="loader-text">{% if view.last_unanswered %}открываю…{% else %}формулирую следующий вопрос…{% endif %}</span>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

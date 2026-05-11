@@ -26,6 +26,37 @@ def _render_question(request: Request, session_id: int, question_id: int, text: 
     )
 
 
+@router.get("/session/{session_id}", response_class=HTMLResponse)
+def session_page(
+    request: Request,
+    session_id: int,
+    user: User = Depends(current_user),
+    service: ChatService = Depends(get_chat_service),
+) -> Response:
+    view = service.get_session_view(user=user, session_id=session_id)
+    if view is None:
+        return Response(content="Сессия не найдена.", status_code=404)
+    return templates.TemplateResponse(
+        request,
+        "session.html",
+        {"view": view},
+    )
+
+
+@router.post("/continue", response_class=HTMLResponse)
+async def continue_session(
+    request: Request,
+    session_id: int = Form(...),
+    user: User = Depends(current_user),
+    service: ChatService = Depends(get_chat_service),
+) -> Response:
+    try:
+        current = await service.continue_session(user=user, session_id=session_id)
+    except ValueError:
+        return Response(content="Сессия не найдена.", status_code=404)
+    return _render_question(request, current.session_id, current.question.id, current.question.question_text)
+
+
 @router.post("/start", response_class=HTMLResponse)
 async def start(
     request: Request,

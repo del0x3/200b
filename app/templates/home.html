@@ -15,12 +15,30 @@
               hx-indicator="#start-loader"
               class="stack">
             <textarea name="topic" rows="4" required autofocus placeholder="Например: как я учился готовить рамен по ночам"></textarea>
-            <button type="submit" class="primary big">Начать</button>
+            <button type="submit" class="primary big">Начать новую сессию</button>
             <div class="loader" id="start-loader" aria-live="polite" aria-hidden="true">
                 <span class="spinner"></span>
                 <span class="loader-text">формулирую первый вопрос…</span>
             </div>
         </form>
+
+        {% if sessions %}
+        <div class="divider"><span>прошлые сессии</span></div>
+        <ul class="session-list">
+            {% for item in sessions %}
+            <li class="session-row">
+                <a href="/chat/session/{{ item.session.id }}" class="session-link">
+                    <div class="session-topic">{{ item.session.topic }}</div>
+                    <div class="session-meta">
+                        {{ item.questions_count }} {% if item.questions_count == 1 %}вопрос{% elif item.questions_count < 5 %}вопроса{% else %}вопросов{% endif %}
+                        · {{ item.session.created_at.strftime('%d.%m.%Y %H:%M') }}
+                    </div>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
         <div class="divider"><span>портрет</span></div>
         <div class="action-grid">
             <a href="/profile" class="action-btn">
