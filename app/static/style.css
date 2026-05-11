@@ -597,6 +597,74 @@ button.small, .action-btn.small {
     font-size: 13px;
 }
 
+/* ===== Настройки стриминга ===== */
+.stream-setting {
+    padding: 10px 0;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.stream-setting:first-of-type { border-top: none; padding-top: 4px; }
+.stream-setting-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-size: 13px;
+}
+.stream-setting-head label { font-weight: 500; color: var(--text); }
+.stream-setting-value {
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 14px;
+}
+.stream-setting-hint { line-height: 1.4; }
+.stream-setting-footer {
+    padding-top: 10px;
+    margin-top: 4px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.stream-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: var(--surface);
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    outline: none;
+    padding: 0;
+    cursor: pointer;
+}
+.stream-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(180deg, var(--accent), var(--accent-2));
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+    transition: transform 0.08s ease;
+}
+.stream-slider::-webkit-slider-thumb:hover { transform: scale(1.1); }
+.stream-slider::-webkit-slider-thumb:active { transform: scale(0.95); }
+.stream-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+}
+.stream-slider:focus { box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.18); }
+
 /* ===== Ответ на вопрос + микрофон ===== */
 .answer-form {
     display: flex;

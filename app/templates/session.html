@@ -30,17 +30,37 @@
         <div class="stream-status muted" id="stream-status"></div>
         <div class="stream-buffer" id="stream-buffer" aria-live="polite"></div>
         <div class="stream-hint muted">
-            В непрерывном режиме ответ улетает сам через 3.5 сек тишины. Или скажи одно из стоп-слов — улетит мгновенно.
+            Ответ улетает сам после <b id="hint-silence-sec">3.5</b> сек тишины. Или скажи одно из стоп-слов — улетит мгновенно.
         </div>
 
         <details class="stream-triggers" id="stream-triggers">
-            <summary>Стоп-слова <span class="muted small" id="trigger-summary"></span></summary>
-            <ul class="trigger-list" id="trigger-list" aria-label="Текущие стоп-слова"></ul>
-            <form class="trigger-add" id="trigger-add-form">
-                <input type="text" id="trigger-add-input" placeholder="например: хватит" maxlength="40" autocomplete="off">
-                <button type="submit" class="primary small">Добавить</button>
-                <button type="button" class="ghost small" id="trigger-reset" title="Вернуть стандартные стоп-слова">Сбросить</button>
-            </form>
+            <summary>Настройки стриминга</summary>
+
+            <div class="stream-setting">
+                <div class="stream-setting-head">
+                    <label for="silence-slider">Пауза до автоотправки</label>
+                    <span class="stream-setting-value"><span id="silence-value">3.5</span> сек</span>
+                </div>
+                <input type="range" id="silence-slider" min="500" max="15000" step="250" value="3500" class="stream-slider" aria-label="Пауза до автоотправки в миллисекундах">
+                <div class="stream-setting-hint muted small">
+                    Чем меньше — тем быстрее улетает ответ при паузе. Слишком мало (&lt;1 сек) — будет отправлять обрывки.
+                </div>
+            </div>
+
+            <div class="stream-setting">
+                <div class="stream-setting-head">
+                    <label>Стоп-слова <span class="muted small" id="trigger-summary"></span></label>
+                </div>
+                <ul class="trigger-list" id="trigger-list" aria-label="Текущие стоп-слова"></ul>
+                <form class="trigger-add" id="trigger-add-form">
+                    <input type="text" id="trigger-add-input" placeholder="например: хватит" maxlength="40" autocomplete="off">
+                    <button type="submit" class="primary small">Добавить</button>
+                </form>
+            </div>
+
+            <div class="stream-setting-footer">
+                <button type="button" class="ghost small" id="settings-reset" title="Вернуть всё к стандартным значениям">Сбросить все настройки</button>
+            </div>
         </details>
     </div>
     {% endif %}
@@ -132,10 +152,31 @@
         return;
     }
 
-    const SILENCE_MS = 3500;
+    const DEFAULT_SILENCE_MS = 3500;
+    const SILENCE_MIN = 500;
+    const SILENCE_MAX = 15000;
+    const SILENCE_KEY = '200b:stream_silence_ms';
     // 'все' выброшено из дефолтов — слишком частое в обычной речи, давало ложные срабатывания.
     const DEFAULT_TRIGGERS = ['дальше', 'следующий', 'следующее', 'всё'];
     const TRIGGERS_KEY = '200b:stream_triggers';
+
+    function loadSilenceMs() {
+        try {
+            const raw = localStorage.getItem(SILENCE_KEY);
+            if (!raw) return DEFAULT_SILENCE_MS;
+            const n = parseInt(raw, 10);
+            if (!Number.isFinite(n)) return DEFAULT_SILENCE_MS;
+            if (n < SILENCE_MIN) return SILENCE_MIN;
+            if (n > SILENCE_MAX) return SILENCE_MAX;
+            return n;
+        } catch (e) {
+            return DEFAULT_SILENCE_MS;
+        }
+    }
+    function saveSilenceMs(n) {
+        try { localStorage.setItem(SILENCE_KEY, String(n)); } catch (e) {}
+    }
+    let SILENCE_MS = loadSilenceMs();
 
     function loadTriggers() {
         try {
@@ -336,11 +377,38 @@
         if (state.active) stopStream(); else startStream();
     });
 
+    // ---- Слайдер таймера тишины ----
+    const sliderEl = document.getElementById('silence-slider');
+    const sliderValueEl = document.getElementById('silence-value');
+    const hintValueEl = document.getElementById('hint-silence-sec');
+
+    function formatSeconds(ms) {
+        const sec = ms / 1000;
+        return (sec % 1 === 0) ? sec.toFixed(0) : sec.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+    }
+    function reflectSilence() {
+        if (sliderEl) sliderEl.value = String(SILENCE_MS);
+        const txt = formatSeconds(SILENCE_MS);
+        if (sliderValueEl) sliderValueEl.textContent = txt;
+        if (hintValueEl) hintValueEl.textContent = txt;
+    }
+    if (sliderEl) {
+        sliderEl.addEventListener('input', () => {
+            const n = parseInt(sliderEl.value, 10);
+            if (Number.isFinite(n)) {
+                SILENCE_MS = Math.max(SILENCE_MIN, Math.min(SILENCE_MAX, n));
+                saveSilenceMs(SILENCE_MS);
+                reflectSilence();
+            }
+        });
+    }
+    reflectSilence();
+
     // ---- Управление пользовательскими стоп-словами ----
     const listEl = document.getElementById('trigger-list');
     const formEl = document.getElementById('trigger-add-form');
     const inputEl = document.getElementById('trigger-add-input');
-    const resetBtn = document.getElementById('trigger-reset');
+    const resetBtn = document.getElementById('settings-reset');
     const summaryEl = document.getElementById('trigger-summary');
 
     function renderTriggers() {
@@ -399,6 +467,9 @@
             TRIGGERS = DEFAULT_TRIGGERS.slice();
             saveTriggers(TRIGGERS);
             renderTriggers();
+            SILENCE_MS = DEFAULT_SILENCE_MS;
+            saveSilenceMs(SILENCE_MS);
+            reflectSilence();
         });
     }
     renderTriggers();
