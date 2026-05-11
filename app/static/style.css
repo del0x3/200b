@@ -216,8 +216,6 @@ button.primary.big { width: 100%; padding: 14px 18px; font-size: 16px; }
     position: relative;
 }
 .action-btn:hover { border-color: var(--accent); color: var(--text); text-decoration: none; background: #1c2230; }
-.action-btn .emoji { font-size: 16px; opacity: 0.85; }
-.action-btn:hover .emoji { opacity: 1; }
 
 .hidden-file {
     position: absolute;
@@ -395,7 +393,17 @@ button.primary.big { width: 100%; padding: 14px 18px; font-size: 16px; }
     background: rgba(255, 91, 107, 0.08);
     animation: mic-pulse 1.2s ease-in-out infinite;
 }
-.stream-icon { font-size: 16px; line-height: 1; }
+.stream-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--muted);
+    display: inline-block;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+.stream-btn:hover .stream-dot { background: var(--accent); }
+.stream-panel[data-stream-state="streaming"] .stream-dot { background: var(--bad); }
 .stream-status {
     font-size: 13px;
     min-height: 18px;
@@ -450,7 +458,16 @@ button.primary.big { width: 100%; padding: 14px 18px; font-size: 16px; }
     transition: border-color 0.15s, background 0.15s;
 }
 .mic-btn:hover { border-color: var(--accent); }
-.mic-btn .mic-icon { font-size: 16px; line-height: 1; }
+.mic-btn .mic-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    display: inline-block;
+    transition: background 0.15s;
+}
+.mic-btn:hover .mic-dot { background: var(--accent); }
+.mic-btn.mic-recording .mic-dot { background: var(--bad); }
 .mic-btn.mic-unsupported {
     opacity: 0.5;
     cursor: not-allowed;

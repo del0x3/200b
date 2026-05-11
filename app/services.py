@@ -277,6 +277,11 @@ class ChatService:
         gid: int | None = self._chat.get_global_session_id(user.id)
         return gid is not None and gid == session.id
 
+    async def start_global_round(self, *, user: User, topic: str) -> CurrentQuestion:
+        session: ChatSession = self.get_or_create_global_session(user)
+        self._chat.update_session_topic(session, topic.strip())
+        return await self._generate_next(user=user, session=session)
+
     def get_session_view(self, *, user: User, session_id: int) -> SessionView | None:
         session = self._chat.get_session_owned_by(session_id=session_id, user_id=user.id)
         if session is None:

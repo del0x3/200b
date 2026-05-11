@@ -7,12 +7,11 @@
 <div class="card" id="chat-card">
     <div id="topic-form">
         <a href="/chat/global" class="global-cta">
-            <span class="global-cta-icon">🌍</span>
             <span class="global-cta-body">
                 <span class="global-cta-title">Глобальная сессия</span>
-                <span class="global-cta-sub">общий дневник поверх всех тем — копится вечно</span>
+                <span class="global-cta-sub">один общий поток — каждый раз новая тема дня поверх всего прошлого</span>
             </span>
-            <span class="global-cta-arrow">→</span>
+            <span class="global-cta-arrow" aria-hidden="true">→</span>
         </a>
 
         <div class="divider"><span>или новая тематическая</span></div>
@@ -53,13 +52,13 @@
         <div class="divider"><span>портрет</span></div>
         <div class="action-grid">
             <a href="/profile" class="action-btn">
-                <span class="emoji">✎</span><span>Редактировать</span>
+                <span>Редактировать</span>
             </a>
             <a href="/profile/download" class="action-btn">
-                <span class="emoji">⬇</span><span>Скачать .md</span>
+                <span>Скачать .md</span>
             </a>
             <label class="action-btn">
-                <span class="emoji">⬆</span><span>Загрузить .md</span>
+                <span>Загрузить .md</span>
                 <form id="upload-md" method="post" action="/profile/upload" enctype="multipart/form-data" class="hidden">
                     <input type="file" name="file" accept=".md,.markdown,text/markdown,text/plain" onchange="this.form.submit()">
                 </form>

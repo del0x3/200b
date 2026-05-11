@@ -2,7 +2,7 @@
 {% block title %}Сессия — 200b{% endblock %}
 {% block topbar_right %}
 <nav class="topbar-nav">
-    <a href="/" class="nav-link">← На главную</a>
+    <a href="/" class="nav-link">На главную</a>
     <form method="post" action="/logout"><button class="ghost" type="submit">Выйти</button></form>
 </nav>
 {% endblock %}
@@ -10,9 +10,9 @@
 <div class="card">
     <div class="session-header">
         {% if is_global %}
-        <div class="muted small">🌍 глобальная сессия · с {{ view.session.created_at.strftime('%d.%m.%Y') }}</div>
+        <div class="muted small">глобальная сессия · с {{ view.session.created_at.strftime('%d.%m.%Y') }}</div>
         <h1 class="session-title">Глобальный диалог</h1>
-        <p class="muted">Вопросы здесь строятся поверх всего, что ты когда-либо отвечал в других сессиях. Возвращайся когда угодно.</p>
+        <p class="muted">Сюда копится всё. Каждый раз выбираешь, о чём поговорить сегодня — вопросы строятся поверх этой темы и всего твоего прошлого опыта.</p>
         {% else %}
         <div class="muted small">тема сессии · {{ view.session.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
         <h1 class="session-title">{{ view.session.topic }}</h1>
@@ -26,8 +26,8 @@
             <div class="qa-q">
                 <span class="qa-marker">В</span>
                 <div class="qa-text">{{ q.question_text }}</div>
-                {% if q.feedback == 'like' %}<span class="qa-tag good">👍</span>
-                {% elif q.feedback == 'dislike' %}<span class="qa-tag bad">👎</span>{% endif %}
+                {% if q.feedback == 'like' %}<span class="qa-tag good">+</span>
+                {% elif q.feedback == 'dislike' %}<span class="qa-tag bad">−</span>{% endif %}
             </div>
             {% if a %}
             <div class="qa-a">
@@ -40,23 +40,44 @@
     </ol>
     {% endif %}
 
-    <div class="divider"><span>сейчас</span></div>
+    {% set need_new_global_topic = is_global and not view.last_unanswered %}
+
+    {% if not need_new_global_topic %}
+    <div class="divider"><span>сейчас отвечаешь</span></div>
 
     <div id="stream-panel" class="stream-panel" data-stream-state="idle">
         <button type="button" class="stream-btn" id="stream-toggle">
-            <span class="stream-icon">🎙</span>
-            <span class="stream-label">Включить непрерывный режим</span>
+            <span class="stream-dot" aria-hidden="true"></span>
+            <span class="stream-label">Говорить непрерывно</span>
         </button>
         <div class="stream-status muted" id="stream-status"></div>
         <div class="stream-buffer" id="stream-buffer" aria-live="polite"></div>
         <div class="stream-hint muted">
-            Скажи «<b>дальше</b>», «<b>следующий</b>» или «<b>всё</b>» — и ответ улетит сразу.
-            Иначе он отправится через 3.5 сек тишины.
+            В непрерывном режиме ответ улетает сам через 3.5 сек тишины. Или скажи «<b>дальше</b>» — улетит мгновенно.
         </div>
     </div>
+    {% endif %}
 
     <div id="chat-card">
-        {% if view.last_unanswered %}
+        {% if need_new_global_topic %}
+        <div id="topic-form">
+            <h2 class="session-title">О чём хочешь поговорить сегодня?</h2>
+            <p class="muted">Можно вернуться к старой теме или взять новую — вопрос построится поверх всего твоего прошлого опыта.</p>
+            <form hx-post="/chat/global/start"
+                  hx-target="#chat-card"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="find button"
+                  hx-indicator="#global-start-loader"
+                  class="stack">
+                <textarea name="topic" rows="3" required autofocus placeholder="Например: чем я гордилась в этом месяце"></textarea>
+                <button type="submit" class="primary big">Начать разговор</button>
+                <div class="loader" id="global-start-loader" aria-live="polite" aria-hidden="true">
+                    <span class="spinner"></span>
+                    <span class="loader-text">формулирую первый вопрос…</span>
+                </div>
+            </form>
+        </div>
+        {% elif view.last_unanswered %}
         {% with question_id = view.last_unanswered.id, question_text = view.last_unanswered.question_text, session_id = view.session.id %}
         {% include "partials/question.html" %}
         {% endwith %}
@@ -69,7 +90,7 @@
               class="stack">
             <input type="hidden" name="session_id" value="{{ view.session.id }}">
             <button type="submit" class="primary big">
-                {% if view.pairs %}Сгенерировать следующий вопрос{% else %}Сгенерировать первый вопрос{% endif %}
+                {% if view.pairs %}Следующий вопрос{% else %}Получить первый вопрос{% endif %}
             </button>
             <div class="loader" id="continue-loader" aria-live="polite" aria-hidden="true">
                 <span class="spinner"></span>
@@ -113,11 +134,9 @@
     function setUi(mode, statusText) {
         panel.dataset.streamState = mode;
         if (mode === 'idle') {
-            btn.querySelector('.stream-icon').textContent = '🎙';
-            btn.querySelector('.stream-label').textContent = 'Включить непрерывный режим';
+            btn.querySelector('.stream-label').textContent = 'Говорить непрерывно';
         } else {
-            btn.querySelector('.stream-icon').textContent = '■';
-            btn.querySelector('.stream-label').textContent = 'Остановить';
+            btn.querySelector('.stream-label').textContent = 'Остановить запись';
         }
         if (statusText !== undefined) statusEl.textContent = statusText;
     }

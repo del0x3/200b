@@ -16,7 +16,7 @@
                   required></textarea>
         <div class="answer-actions">
             <button type="button" class="mic-btn" data-mic title="Записать голосом" aria-label="Записать голосом">
-                <span class="mic-icon" aria-hidden="true">🎤</span>
+                <span class="mic-dot" aria-hidden="true"></span>
                 <span class="mic-label">Голосом</span>
             </button>
             <button type="submit" class="primary">Отправить ответ</button>
@@ -34,7 +34,7 @@
               hx-indicator="closest .qblock .loader">
             <input type="hidden" name="question_id" value="{{ question_id }}">
             <input type="hidden" name="feedback" value="like">
-            <button type="submit" class="good">👍 Нравится — дальше</button>
+            <button type="submit" class="good">Нравится — дальше</button>
         </form>
         <form hx-post="/chat/feedback"
               hx-target="#chat-card"
@@ -43,7 +43,7 @@
               hx-indicator="closest .qblock .loader">
             <input type="hidden" name="question_id" value="{{ question_id }}">
             <input type="hidden" name="feedback" value="dislike">
-            <button type="submit" class="bad">👎 Не нравится — дальше</button>
+            <button type="submit" class="bad">Не нравится — дальше</button>
         </form>
         <form hx-post="/chat/pivot"
               hx-target="#chat-card"
@@ -51,7 +51,7 @@
               hx-disabled-elt="closest .qblock button, closest .qblock textarea"
               hx-indicator="closest .qblock .loader">
             <input type="hidden" name="session_id" value="{{ session_id }}">
-            <button type="submit" class="ghost">🔄 Другое направление</button>
+            <button type="submit" class="ghost">Другое направление</button>
         </form>
     </div>
 

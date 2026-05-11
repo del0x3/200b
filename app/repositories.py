@@ -56,6 +56,10 @@ class ChatRepository:
         self._db.refresh(s)
         return s
 
+    def update_session_topic(self, session: ChatSession, topic: str) -> None:
+        session.topic = topic
+        self._db.commit()
+
     def close_session(self, session: ChatSession) -> None:
         session.closed_at = datetime.now(tz=timezone.utc)
         self._db.commit()

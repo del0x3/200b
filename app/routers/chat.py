@@ -37,6 +37,26 @@ def open_global_session(
     )
 
 
+@router.post("/global/start")
+async def start_global_round(
+    request: Request,
+    topic: str = Form(...),
+    user: User = Depends(current_user),
+    service: ChatService = Depends(get_chat_service),
+) -> Response:
+    try:
+        form = ChatStartForm(topic=topic)
+    except ValidationError:
+        return Response(content="Тема не может быть пустой.", status_code=400)
+    current = await service.start_global_round(user=user, topic=form.topic)
+    target = f"/chat/session/{current.session_id}"
+    if request.headers.get("hx-request"):
+        resp = Response(status_code=200)
+        resp.headers["HX-Redirect"] = target
+        return resp
+    return RedirectResponse(url=target, status_code=status.HTTP_303_SEE_OTHER)
+
+
 @router.get("/session/{session_id}", response_class=HTMLResponse)
 def session_page(
     request: Request,
