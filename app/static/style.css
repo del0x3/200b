@@ -158,6 +158,12 @@ button.bad  { border-color: var(--bad);  color: var(--bad);  background: rgba(25
 }
 .md-editor:focus { background: var(--surface-2); }
 
+.doc-editor {
+    min-height: 280px;
+    font-size: 15px;
+    line-height: 1.55;
+}
+
 .row { display: flex; align-items: center; gap: 14px; }
 .row.spread { justify-content: space-between; flex-wrap: wrap; }
 .saved-flash { font-size: 13px; }

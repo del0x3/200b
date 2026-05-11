@@ -241,6 +241,156 @@ def test_empty_url_silently_ignored(authed_client: TestClient) -> None:
     assert unique_marker not in page
 
 
+# ----- Documents (long-form MD context) -----
+
+def test_document_crud_full_cycle(authed_client: TestClient) -> None:
+    body = "# Моя биография\n\n" + ("Я родилась в маленьком городе. " * 30)
+    r = authed_client.post(
+        "/profile/doc",
+        data={"title": "Биография", "content": body, "enabled": "1"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+
+    page = authed_client.get("/profile").text
+    assert "Биография" in page
+    assert "Я родилась в маленьком городе" in page
+
+    import re
+    m = re.search(r'/profile/doc/(\d+)"', page)
+    assert m, "doc id not found in page"
+    did = int(m.group(1))
+
+    # Update
+    new_body = body.replace("маленьком", "большом")
+    r = authed_client.post(
+        f"/profile/doc/{did}",
+        data={"title": "Биография обновлённая", "content": new_body, "enabled": ""},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    page = authed_client.get("/profile").text
+    assert "Биография обновлённая" in page
+    assert "в большом городе" in page
+
+    # Download — must work with Russian title (RFC 5987)
+    r = authed_client.get(f"/profile/doc/{did}/download")
+    assert r.status_code == 200
+    assert "в большом городе" in r.text
+    assert "filename*=UTF-8''" in r.headers["content-disposition"]
+
+    # Delete
+    r = authed_client.post(f"/profile/doc/{did}/delete", follow_redirects=False)
+    assert r.status_code == 303
+    page = authed_client.get("/profile").text
+    assert "Биография обновлённая" not in page
+
+
+def test_document_no_count_limit_lots_of_docs(authed_client: TestClient) -> None:
+    """Юзер просил «без ограничений по количеству» — создаём 12 документов."""
+    for i in range(12):
+        r = authed_client.post(
+            "/profile/doc",
+            data={"title": f"Doc-{i}", "content": f"Содержимое документа номер {i}.", "enabled": "1"},
+        )
+        assert r.status_code in (200, 303)
+    page = authed_client.get("/profile").text
+    for i in range(12):
+        assert f"Doc-{i}" in page
+
+
+def test_document_upload_md(authed_client: TestClient) -> None:
+    text = "# Мой стиль письма\n\n" + ("Короткие предложения. Без воды. " * 20)
+    r = authed_client.post(
+        "/profile/doc/upload",
+        data={"title": ""},
+        files={"file": ("style.md", BytesIO(text.encode("utf-8")), "text/markdown")},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    page = authed_client.get("/profile").text
+    assert "style" in page  # filename used as title fallback
+    assert "Короткие предложения" in page
+
+
+def test_document_upload_rejects_huge_file(authed_client: TestClient) -> None:
+    huge = b"X" * 1_500_000
+    r = authed_client.post(
+        "/profile/doc/upload",
+        files={"file": ("huge.md", BytesIO(huge), "text/markdown")},
+    )
+    assert r.status_code == 413
+
+
+def test_document_upload_rejects_non_utf8(authed_client: TestClient) -> None:
+    r = authed_client.post(
+        "/profile/doc/upload",
+        files={"file": ("bad.md", BytesIO(b"\xff\xfe\x00broken"), "text/markdown")},
+    )
+    assert r.status_code == 400
+
+
+def test_empty_document_content_silently_ignored(authed_client: TestClient) -> None:
+    r = authed_client.post(
+        "/profile/doc",
+        data={"title": "пусто", "content": "   ", "enabled": "1"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 303
+    page = authed_client.get("/profile").text
+    # title shouldn't appear because the doc wasn't created
+    assert "пусто" not in page or "Ещё ни одного документа" in page
+
+
+def test_disabled_document_not_sent_to_llm(authed_client: TestClient) -> None:
+    authed_client.post(
+        "/profile/doc",
+        data={"title": "включенный", "content": "ВКЛЮЧЕННОЕ_СОДЕРЖИМОЕ_ДОКУМЕНТА", "enabled": "1"},
+    )
+    authed_client.post(
+        "/profile/doc",
+        data={"title": "выключенный", "content": "ВЫКЛЮЧЕННОЕ_СОДЕРЖИМОЕ_ДОКУМЕНТА", "enabled": ""},
+    )
+
+    authed_client.fake_ds.queue("вопрос?")  # type: ignore[attr-defined]
+    authed_client.post(
+        "/chat/start",
+        data={"topic": "проверка документов"},
+        headers={"hx-request": "true"},
+        follow_redirects=False,
+    )
+    last_call = authed_client.fake_ds.calls[-1]  # type: ignore[attr-defined]
+    full = " ".join(m.content for m in last_call)
+    assert "ВКЛЮЧЕННОЕ_СОДЕРЖИМОЕ_ДОКУМЕНТА" in full
+    assert "ВЫКЛЮЧЕННОЕ_СОДЕРЖИМОЕ_ДОКУМЕНТА" not in full
+    # And the prompt must label the section so the LLM treats it as knowledge, not rules
+    assert "Дополнительные документы автора" in full
+
+
+def test_other_users_document_inaccessible(authed_client: TestClient) -> None:
+    authed_client.post(
+        "/profile/doc", data={"title": "тайна", "content": "ТАЙНОЕ_СОДЕРЖИМОЕ", "enabled": "1"}
+    )
+    import re
+    page = authed_client.get("/profile").text
+    did = int(re.search(r'/profile/doc/(\d+)"', page).group(1))
+
+    # Switch user
+    authed_client.post("/logout")
+    authed_client.cookies.clear()
+    authed_client.post("/register", data={"email": "userb-doc@test.local", "password": "secret123"})
+    from app.questions import ONBOARDING_QUESTIONS
+    for q in ONBOARDING_QUESTIONS:
+        authed_client.post("/onboarding/answer", data={"question_key": q.key, "answer_text": "y"})
+
+    r = authed_client.get(f"/profile/doc/{did}/download")
+    assert r.status_code == 404
+
+    page_b = authed_client.get("/profile").text
+    assert "тайна" not in page_b
+    assert "ТАЙНОЕ_СОДЕРЖИМОЕ" not in page_b
+
+
 def test_link_appears_in_llm_prompt(authed_client: TestClient) -> None:
     authed_client.post(
         "/profile/link",

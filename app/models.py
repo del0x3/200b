@@ -97,6 +97,31 @@ class UserPrompt(Base):
     )
 
 
+class UserDocument(Base):
+    """Контекст-документ автора: длинный MD-текст с биографией / стилем / нишей.
+
+    В отличие от UserPrompt (короткие правила «как отвечать»), документы — это
+    знания о самом авторе, которые модель читает перед формулировкой вопроса.
+    Подмешиваются к промпту в каждом чате отдельным блоком.
+    """
+
+    __tablename__ = "user_documents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    content: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="1"
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class UserLink(Base):
     """Ссылка на внешний ресурс автора — даёт нейронке знать контекст."""
 

@@ -13,6 +13,7 @@ from app.models import (
     ChatSession,
     Feedback,
     User,
+    UserDocument,
     UserGlobalSession,
     UserLink,
     UserPrompt,
@@ -102,6 +103,53 @@ class UserPromptRepository:
 
     def delete(self, prompt: UserPrompt) -> None:
         self._db.delete(prompt)
+        self._db.commit()
+
+
+class UserDocumentRepository:
+    """CRUD над `user_documents` — длинные MD-документы автора (контекст для LLM)."""
+
+    def __init__(self, db: Session) -> None:
+        self._db: Session = db
+
+    def list_for_user(self, user_id: int) -> list[UserDocument]:
+        rows = self._db.scalars(
+            select(UserDocument)
+            .where(UserDocument.user_id == user_id)
+            .order_by(UserDocument.position, UserDocument.id)
+        ).all()
+        return list(rows)
+
+    def list_enabled_for_user(self, user_id: int) -> list[UserDocument]:
+        rows = self._db.scalars(
+            select(UserDocument)
+            .where(UserDocument.user_id == user_id, UserDocument.enabled.is_(True))
+            .order_by(UserDocument.position, UserDocument.id)
+        ).all()
+        return list(rows)
+
+    def get(self, doc_id: int, user_id: int) -> UserDocument | None:
+        return self._db.scalar(
+            select(UserDocument).where(
+                UserDocument.id == doc_id, UserDocument.user_id == user_id
+            )
+        )
+
+    def create(self, *, user_id: int, title: str, content: str, enabled: bool = True) -> UserDocument:
+        d = UserDocument(user_id=user_id, title=title, content=content, enabled=enabled)
+        self._db.add(d)
+        self._db.commit()
+        self._db.refresh(d)
+        return d
+
+    def update(self, doc: UserDocument, *, title: str, content: str, enabled: bool) -> None:
+        doc.title = title
+        doc.content = content
+        doc.enabled = enabled
+        self._db.commit()
+
+    def delete(self, doc: UserDocument) -> None:
+        self._db.delete(doc)
         self._db.commit()
 
 

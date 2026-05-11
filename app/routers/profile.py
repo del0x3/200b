@@ -32,6 +32,7 @@ def profile_page(
             "saved": False,
             "prompts": service.list_prompts(user),
             "links": service.list_links(user),
+            "documents": service.list_documents(user),
         },
     )
 
@@ -194,6 +195,93 @@ def link_delete(
 ) -> Response:
     service.delete_link(user, link_id)
     return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+
+
+# ---- User documents (long-form context md) ----
+
+@router.post("/profile/doc")
+def doc_create(
+    title: str = Form(""),
+    content: str = Form(""),
+    enabled: str | None = Form(default=None),
+    user: User = Depends(current_user),
+    service: ProfileService = Depends(get_profile_service),
+) -> Response:
+    if not content.strip():
+        return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+    service.create_document(user, title=title, content=content, enabled=bool(enabled))
+    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/profile/doc/upload")
+async def doc_upload(
+    file: UploadFile = File(...),
+    title: str = Form(""),
+    user: User = Depends(current_user),
+    service: ProfileService = Depends(get_profile_service),
+) -> Response:
+    raw: bytes = await file.read()
+    if len(raw) > MAX_UPLOAD_BYTES:
+        return Response(content=f"Файл больше {MAX_UPLOAD_BYTES // 1000} КБ.", status_code=413)
+    try:
+        text: str = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return Response(content="Файл должен быть в UTF-8.", status_code=400)
+    fallback_title = (file.filename or "Документ").rsplit(".", 1)[0]
+    service.create_document(
+        user, title=(title.strip() or fallback_title), content=text, enabled=True
+    )
+    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/profile/doc/{doc_id}")
+def doc_update(
+    doc_id: int,
+    title: str = Form(""),
+    content: str = Form(""),
+    enabled: str | None = Form(default=None),
+    user: User = Depends(current_user),
+    service: ProfileService = Depends(get_profile_service),
+) -> Response:
+    service.update_document(
+        user, doc_id, title=title, content=content, enabled=bool(enabled)
+    )
+    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/profile/doc/{doc_id}/delete")
+def doc_delete(
+    doc_id: int,
+    user: User = Depends(current_user),
+    service: ProfileService = Depends(get_profile_service),
+) -> Response:
+    service.delete_document(user, doc_id)
+    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/profile/doc/{doc_id}/download")
+def doc_download(
+    doc_id: int,
+    user: User = Depends(current_user),
+    service: ProfileService = Depends(get_profile_service),
+) -> Response:
+    from urllib.parse import quote
+
+    d = service.get_document(user, doc_id)
+    if d is None:
+        return Response(content="Не найдено.", status_code=404)
+    raw_title = (d.title or "document").replace('"', "")
+    ascii_fallback = raw_title.encode("ascii", "replace").decode("ascii").replace("?", "_")
+    quoted = quote(raw_title, safe="")
+    disposition = (
+        f'attachment; filename="{ascii_fallback}.md"; '
+        f"filename*=UTF-8''{quoted}.md"
+    )
+    return Response(
+        content=d.content,
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": disposition},
+    )
 
 
 @router.post("/profile/upload")

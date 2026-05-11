@@ -113,6 +113,76 @@
     </form>
 </div>
 
+<!-- === Карточка: Документы (длинные MD-знания об авторе) === -->
+<div class="card section-card">
+    <h2>Документы</h2>
+    <p class="muted">Длинные MD-тексты про тебя: биография, стиль письма, описание ниши, бизнес-модель — что угодно. Нейронка читает все включённые документы перед каждым вопросом. Лимита по количеству нет.</p>
+
+    {% if documents %}
+    <ul class="ctx-list">
+        {% for d in documents %}
+        <li class="ctx-item">
+            <form method="post" action="/profile/doc/{{ d.id }}" class="stack ctx-form">
+                <label>
+                    <span>Название</span>
+                    <input type="text" name="title" value="{{ d.title }}" placeholder="Например: моя биография" maxlength="200">
+                </label>
+                <label>
+                    <span>Содержимое (Markdown)</span>
+                    <textarea name="content" rows="14" class="md-editor doc-editor" placeholder="# Заголовок документа&#10;&#10;Текст..." required>{{ d.content }}</textarea>
+                </label>
+                <div class="ctx-footer">
+                    <label class="ctx-toggle">
+                        <input type="checkbox" name="enabled" value="1" {% if d.enabled %}checked{% endif %}>
+                        <span>включено</span>
+                    </label>
+                    <div class="ctx-actions">
+                        <a href="/profile/doc/{{ d.id }}/download" class="action-btn small">Скачать .md</a>
+                        <button type="submit" class="primary small">Сохранить</button>
+                        <button type="submit" form="del-doc-{{ d.id }}" class="ghost danger small">Удалить</button>
+                    </div>
+                </div>
+            </form>
+            <form id="del-doc-{{ d.id }}" method="post" action="/profile/doc/{{ d.id }}/delete"
+                  onsubmit="return confirm('Удалить документ «{{ d.title|default(d.content[:40], true) }}»?');"></form>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted small">Ещё ни одного документа.</p>
+    {% endif %}
+
+    <div class="divider"><span>новый документ</span></div>
+
+    <form method="post" action="/profile/doc" class="stack">
+        <label>
+            <span>Название</span>
+            <input type="text" name="title" placeholder="Например: моя биография" maxlength="200">
+        </label>
+        <label>
+            <span>Содержимое (Markdown)</span>
+            <textarea name="content" rows="14" class="md-editor doc-editor" required placeholder="# Заголовок&#10;&#10;Пиши свободно. Это полноценный MD-файл."></textarea>
+        </label>
+        <div class="ctx-footer">
+            <label class="ctx-toggle">
+                <input type="checkbox" name="enabled" value="1" checked>
+                <span>сразу включить</span>
+            </label>
+            <button type="submit" class="primary">Добавить документ</button>
+        </div>
+    </form>
+
+    <div class="muted small" style="margin-top: 14px;">или загрузи готовый .md-файл:</div>
+    <form method="post" action="/profile/doc/upload" enctype="multipart/form-data" class="row" style="gap: 8px; margin-top: 6px;">
+        <input type="text" name="title" placeholder="Название (необязательно)" style="flex: 1;">
+        <label class="action-btn small">
+            Выбрать .md
+            <input type="file" name="file" accept=".md,.markdown,text/markdown,text/plain"
+                   onchange="this.form.submit()" class="hidden-file">
+        </label>
+    </form>
+</div>
+
 <!-- === Карточка 3: Ресурсы (ссылки) === -->
 <div class="card section-card">
     <h2>Ресурсы</h2>

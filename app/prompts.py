@@ -84,11 +84,13 @@ class PromptBuilder:
         is_global: bool = False,
         user_prompts: list[tuple[str, str]] | None = None,
         user_links: list[tuple[str, str]] | None = None,
+        user_documents: list[tuple[str, str]] | None = None,
     ) -> list[ChatMessage]:
         answers_map: dict[int, str] = answers or {}
         prior: list[tuple[str, ChatQuestion, str | None]] = prior_experience or []
         custom_prompts: list[tuple[str, str]] = user_prompts or []
         custom_links: list[tuple[str, str]] = user_links or []
+        custom_docs: list[tuple[str, str]] = user_documents or []
         sections: list[str] = []
 
         cleaned_profile: str = (profile_md or "").strip()
@@ -111,6 +113,20 @@ class PromptBuilder:
                 + "\n\n".join(cp_blocks)
                 + "\n\nЭти указания — фон. Не цитируй их в самом вопросе, "
                 "используй как ограничения/контекст."
+            )
+
+        if custom_docs:
+            doc_blocks: list[str] = []
+            for i, (title, content) in enumerate(custom_docs, 1):
+                head = f"--- Документ [{i}]: {title} ---" if title else f"--- Документ [{i}] ---"
+                doc_blocks.append(f"{head}\n{content.strip()}")
+            sections.append(
+                "=== Дополнительные документы автора (знания о нём — биография, стиль, ниша) ===\n"
+                + "\n\n".join(doc_blocks)
+                + "\n\nЭто длинный контекст про автора. Используй его, чтобы "
+                "вопрос звучал как от человека, который читал эти документы. "
+                "Не пересказывай документ в вопросе, не цитируй прямо — задай "
+                "вопрос, который было бы невозможно задать, не зная этого."
             )
 
         if custom_links:

@@ -20,7 +20,13 @@ from app.profile_md import (
 )
 from app.prompts import FALLBACK_QUESTION, PromptBuilder
 from app.questions import QUESTIONS_BY_KEY, TOTAL_ONBOARDING_QUESTIONS, OnboardingQuestion
-from app.repositories import ChatRepository, UserLinkRepository, UserPromptRepository, UserRepository
+from app.repositories import (
+    ChatRepository,
+    UserDocumentRepository,
+    UserLinkRepository,
+    UserPromptRepository,
+    UserRepository,
+)
 from app.security import JwtService, PasswordHasher
 
 logger = logging.getLogger(__name__)
@@ -133,6 +139,7 @@ class ProfileService:
         self._users: UserRepository = UserRepository(db)
         self._prompts: UserPromptRepository = UserPromptRepository(db)
         self._links: UserLinkRepository = UserLinkRepository(db)
+        self._docs: UserDocumentRepository = UserDocumentRepository(db)
 
     def save_markdown(self, user: User, markdown: str) -> None:
         self._users.set_profile_md(user, markdown)
@@ -187,6 +194,33 @@ class ProfileService:
         self._links.delete(link)
         return True
 
+    def list_documents(self, user: User):
+        return self._docs.list_for_user(user.id)
+
+    def get_document(self, user: User, doc_id: int):
+        return self._docs.get(doc_id, user.id)
+
+    def create_document(self, user: User, *, title: str, content: str, enabled: bool = True):
+        return self._docs.create(
+            user_id=user.id, title=title.strip(), content=content, enabled=enabled
+        )
+
+    def update_document(
+        self, user: User, doc_id: int, *, title: str, content: str, enabled: bool
+    ) -> bool:
+        d = self._docs.get(doc_id, user.id)
+        if d is None:
+            return False
+        self._docs.update(d, title=title.strip(), content=content, enabled=enabled)
+        return True
+
+    def delete_document(self, user: User, doc_id: int) -> bool:
+        d = self._docs.get(doc_id, user.id)
+        if d is None:
+            return False
+        self._docs.delete(d)
+        return True
+
 
 @dataclass(frozen=True)
 class CurrentQuestion:
@@ -225,6 +259,7 @@ class ChatService:
         self._chat: ChatRepository = ChatRepository(db)
         self._user_prompts: UserPromptRepository = UserPromptRepository(db)
         self._user_links: UserLinkRepository = UserLinkRepository(db)
+        self._user_docs: UserDocumentRepository = UserDocumentRepository(db)
         self._deepseek: DeepSeekClient = deepseek
         self._prompts: PromptBuilder = prompts or PromptBuilder()
 
@@ -316,6 +351,11 @@ class ChatService:
         user_links: list[tuple[str, str]] = [
             (l.url, l.description) for l in self._user_links.list_for_user(user.id)
         ]
+        user_documents: list[tuple[str, str]] = [
+            (d.title, d.content)
+            for d in self._user_docs.list_enabled_for_user(user.id)
+            if d.content.strip()
+        ]
         messages = self._prompts.build(
             profile_md=user.profile_md,
             topic=session.topic,
@@ -326,6 +366,7 @@ class ChatService:
             is_global=is_global,
             user_prompts=user_prompts,
             user_links=user_links,
+            user_documents=user_documents,
         )
         try:
             return await self._deepseek.chat(messages)
