@@ -2,21 +2,13 @@
 {% block title %}Профиль — 200b{% endblock %}
 {% block topbar_right %}
 <nav class="topbar-nav">
-    <a href="/" class="nav-link">Главная</a>
-    <a href="/profile/download" class="nav-link">⬇ Скачать</a>
-    <label class="nav-link nav-upload">
-        ⬆ Загрузить
-        <form method="post" action="/profile/upload" enctype="multipart/form-data" class="hidden" id="profile-upload-form">
-            <input type="file" name="file" accept=".md,.markdown,text/markdown,text/plain"
-                   onchange="this.form.submit()">
-        </form>
-        <input type="file" accept=".md,.markdown,text/markdown,text/plain" class="hidden-file"
-               onchange="const f=document.getElementById('profile-upload-form'); f.querySelector('input[type=file]').files=this.files; f.submit();">
-    </label>
+    <a href="/" class="nav-link">На главную</a>
     <form method="post" action="/logout"><button class="ghost" type="submit">Выйти</button></form>
 </nav>
 {% endblock %}
 {% block content %}
+
+<!-- === Карточка 1: Портрет === -->
 <div class="card">
     <h1>Твой портрет</h1>
     <p class="muted">Это тот же текст, который ушёл в нейронку. Можешь править свободно — добавлять, удалять, перефразировать. Сохрани — и со следующего ответа нейронка увидит обновления.</p>
@@ -26,7 +18,7 @@
     </div>
     {% endif %}
     <form method="post" action="/profile" class="stack" id="profile-form">
-        <textarea name="profile_md" class="md-editor" rows="28" spellcheck="false" id="profile-md"
+        <textarea name="profile_md" class="md-editor" rows="22" spellcheck="false" id="profile-md"
                   data-server-text="{{ profile_md|e }}"
                   {% if rejected %}data-rejected-text="{{ rejected_text|e }}"{% endif %}>{{ profile_md }}</textarea>
         <div class="row spread">
@@ -37,7 +29,115 @@
             <button type="button" class="ghost" id="restore-server" title="Откатить к тексту с сервера">Откатить к сохранённому</button>
         </div>
     </form>
+    <div class="row" style="margin-top: 14px; gap: 8px;">
+        <a href="/profile/download" class="action-btn small">Скачать .md</a>
+        <label class="action-btn small">
+            Загрузить .md
+            <form method="post" action="/profile/upload" enctype="multipart/form-data" class="hidden" id="profile-upload-form">
+                <input type="file" name="file" accept=".md,.markdown,text/markdown,text/plain"
+                       onchange="this.form.submit()">
+            </form>
+            <input type="file" accept=".md,.markdown,text/markdown,text/plain" class="hidden-file"
+                   onchange="const f=document.getElementById('profile-upload-form'); f.querySelector('input[type=file]').files=this.files; f.submit();">
+        </label>
+    </div>
 </div>
+
+<!-- === Карточка 2: Пользовательские промпты === -->
+<div class="card section-card">
+    <h2>Кастомные указания</h2>
+    <p class="muted">Эти тексты приклеиваются к промпту в <b>каждом</b> чате — и в обычной сессии, и в глобальной. Используй, чтобы задать постоянный стиль, табу, формат вопросов, важные роли. Можно временно выключать галочкой.</p>
+
+    {% if prompts %}
+    <ul class="ctx-list">
+        {% for p in prompts %}
+        <li class="ctx-item">
+            <form method="post" action="/profile/prompt/{{ p.id }}" class="stack ctx-form">
+                <div class="row spread">
+                    <input type="text" name="title" value="{{ p.title }}" placeholder="Короткое название" maxlength="200" class="ctx-title-input">
+                    <label class="ctx-toggle">
+                        <input type="checkbox" name="enabled" value="1" {% if p.enabled %}checked{% endif %}>
+                        <span>включено</span>
+                    </label>
+                </div>
+                <textarea name="content" rows="5" placeholder="Текст указания" required>{{ p.content }}</textarea>
+                <div class="row" style="gap: 8px;">
+                    <button type="submit" class="primary small">Сохранить</button>
+                    <a href="/profile/prompt/{{ p.id }}/download" class="action-btn small">Скачать .md</a>
+                </div>
+            </form>
+            <form method="post" action="/profile/prompt/{{ p.id }}/delete" class="ctx-delete"
+                  onsubmit="return confirm('Удалить указание «{{ p.title|default(p.content[:40], true) }}»?');">
+                <button type="submit" class="ghost danger small">Удалить</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted small">Ещё ничего не добавлено.</p>
+    {% endif %}
+
+    <div class="divider"><span>добавить</span></div>
+
+    <form method="post" action="/profile/prompt" class="stack">
+        <input type="text" name="title" placeholder="Короткое название, например «Тон голоса»" maxlength="200">
+        <textarea name="content" rows="4" required placeholder="Например: всегда задавай вопросы в женском роде, моя ниша — фитнес"></textarea>
+        <div class="row" style="gap: 10px; align-items: center;">
+            <label class="ctx-toggle">
+                <input type="checkbox" name="enabled" value="1" checked>
+                <span>сразу включить</span>
+            </label>
+            <button type="submit" class="primary">Добавить указание</button>
+        </div>
+    </form>
+
+    <div class="muted small" style="margin-top: 10px;">или загрузи готовый .md — он сразу станет указанием:</div>
+    <form method="post" action="/profile/prompt/upload" enctype="multipart/form-data" class="row" style="gap: 8px; margin-top: 6px;">
+        <input type="text" name="title" placeholder="Название (необязательно)" style="flex: 1;">
+        <label class="action-btn small">
+            Выбрать .md
+            <input type="file" name="file" accept=".md,.markdown,text/markdown,text/plain"
+                   onchange="this.form.submit()" class="hidden-file">
+        </label>
+    </form>
+</div>
+
+<!-- === Карточка 3: Ресурсы (ссылки) === -->
+<div class="card section-card">
+    <h2>Ресурсы</h2>
+    <p class="muted">Ссылки на твои внешние ресурсы — блог, портфолио, телеграм-канал и т.п. Нейронка не будет цитировать URL в вопросе, но узнает, чем ты живёшь онлайн, и через описание получит контекст.</p>
+
+    {% if links %}
+    <ul class="ctx-list">
+        {% for l in links %}
+        <li class="ctx-item">
+            <form method="post" action="/profile/link/{{ l.id }}" class="stack ctx-form">
+                <input type="url" name="url" value="{{ l.url }}" placeholder="https://..." required>
+                <input type="text" name="description" value="{{ l.description }}" placeholder="Чем это для тебя — короткое описание" maxlength="500">
+                <div class="row" style="gap: 8px;">
+                    <button type="submit" class="primary small">Сохранить</button>
+                </div>
+            </form>
+            <form method="post" action="/profile/link/{{ l.id }}/delete" class="ctx-delete"
+                  onsubmit="return confirm('Удалить ссылку «{{ l.url }}»?');">
+                <button type="submit" class="ghost danger small">Удалить</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted small">Ещё ничего не добавлено.</p>
+    {% endif %}
+
+    <div class="divider"><span>добавить</span></div>
+
+    <form method="post" action="/profile/link" class="stack">
+        <input type="url" name="url" required placeholder="https://example.com/my-blog">
+        <input type="text" name="description" placeholder="Что это и зачем нейронке об этом знать" maxlength="500">
+        <div><button type="submit" class="primary">Добавить ресурс</button></div>
+    </form>
+</div>
+
 <script>
 (function () {
     const ta = document.getElementById("profile-md");
@@ -65,7 +165,7 @@
                     localStorage.removeItem(KEY);
                 }
             }
-        } catch (e) { /* localStorage недоступен — пропускаем */ }
+        } catch (e) {}
     }
 
     function setStatus(text) { if (status) status.textContent = text; }

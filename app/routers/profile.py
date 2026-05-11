@@ -18,13 +18,19 @@ MAX_UPLOAD_BYTES: int = 1_000_000
 def profile_page(
     request: Request,
     user: User = Depends(current_user),
+    service: ProfileService = Depends(get_profile_service),
 ) -> Response:
     if not user.onboarding_complete:
         return RedirectResponse(url="/onboarding", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse(
         request,
         "profile.html",
-        {"profile_md": user.profile_md, "saved": False},
+        {
+            "profile_md": user.profile_md,
+            "saved": False,
+            "prompts": service.list_prompts(user),
+            "links": service.list_links(user),
+        },
     )
 
 
@@ -66,6 +72,118 @@ def profile_download(user: User = Depends(current_user)) -> Response:
         media_type="text/markdown; charset=utf-8",
         headers={"Content-Disposition": 'attachment; filename="profile.md"'},
     )
+
+
+@router.post("/profile/prompt")
+def prompt_create(
+    title: str = Form(""),
+    content: str = Form(""),
+    enabled: str | None = Form(default=None),
+    user: User = Depends(current_user),
+    service: ProfileService = Depends(get_profile_service),
+) -> Response:
+    if not content.strip():
+        return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+    service.create_prompt(user, title=title, content=content, enabled=bool(enabled))
+    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/profile/prompt/upload")
+async def prompt_upload(
+    file: UploadFile = File(...),
+    title: str = Form(""),
+    user: User = Depends(current_user),
+    service: ProfileService = Depends(get_profile_service),
+) -> Response:
+    raw: bytes = await file.read()
+    if len(raw) > MAX_UPLOAD_BYTES:
+        return Response(content=f"Файл больше {MAX_UPLOAD_BYTES // 1000} КБ.", status_code=413)
+    try:
+        text: str = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return Response(content="Файл должен быть в UTF-8.", status_code=400)
+    fallback_title = (file.filename or "Промпт").rsplit(".", 1)[0]
+    service.create_prompt(
+        user, title=(title.strip() or fallback_title), content=text, enabled=True
+    )
+    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/profile/prompt/{prompt_id}")
+def prompt_update(
+    prompt_id: int,
+    title: str = Form(""),
+    content: str = Form(""),
+    enabled: str | None = Form(default=None),
+    user: User = Depends(current_user),
+    service: ProfileService = Depends(get_profile_service),
+) -> Response:
+    service.update_prompt(
+        user, prompt_id, title=title, content=content, enabled=bool(enabled)
+    )
+    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/profile/prompt/{prompt_id}/delete")
+def prompt_delete(
+    prompt_id: int,
+    user: User = Depends(current_user),
+    service: ProfileService = Depends(get_profile_service),
+) -> Response:
+    service.delete_prompt(user, prompt_id)
+    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/profile/prompt/{prompt_id}/download")
+def prompt_download(
+    prompt_id: int,
+    user: User = Depends(current_user),
+    service: ProfileService = Depends(get_profile_service),
+) -> Response:
+    for p in service.list_prompts(user):
+        if p.id == prompt_id:
+            safe_title = (p.title or "prompt").replace('"', '')
+            return Response(
+                content=p.content,
+                media_type="text/markdown; charset=utf-8",
+                headers={"Content-Disposition": f'attachment; filename="{safe_title}.md"'},
+            )
+    return Response(content="Не найдено.", status_code=404)
+
+
+@router.post("/profile/link")
+def link_create(
+    url: str = Form(""),
+    description: str = Form(""),
+    user: User = Depends(current_user),
+    service: ProfileService = Depends(get_profile_service),
+) -> Response:
+    if not url.strip():
+        return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+    service.create_link(user, url=url, description=description)
+    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/profile/link/{link_id}")
+def link_update(
+    link_id: int,
+    url: str = Form(""),
+    description: str = Form(""),
+    user: User = Depends(current_user),
+    service: ProfileService = Depends(get_profile_service),
+) -> Response:
+    service.update_link(user, link_id, url=url, description=description)
+    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/profile/link/{link_id}/delete")
+def link_delete(
+    link_id: int,
+    user: User = Depends(current_user),
+    service: ProfileService = Depends(get_profile_service),
+) -> Response:
+    service.delete_link(user, link_id)
+    return RedirectResponse(url="/profile", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/profile/upload")

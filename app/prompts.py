@@ -67,9 +67,13 @@ class PromptBuilder:
         pivot: bool = False,
         prior_experience: list[tuple[str, ChatQuestion, str | None]] | None = None,
         is_global: bool = False,
+        user_prompts: list[tuple[str, str]] | None = None,
+        user_links: list[tuple[str, str]] | None = None,
     ) -> list[ChatMessage]:
         answers_map: dict[int, str] = answers or {}
         prior: list[tuple[str, ChatQuestion, str | None]] = prior_experience or []
+        custom_prompts: list[tuple[str, str]] = user_prompts or []
+        custom_links: list[tuple[str, str]] = user_links or []
         sections: list[str] = []
 
         cleaned_profile: str = (profile_md or "").strip()
@@ -80,6 +84,34 @@ class PromptBuilder:
         else:
             sections.append(
                 "=== Портрет автора ===\n(пока пусто — опирайся только на тему дня)"
+            )
+
+        if custom_prompts:
+            cp_blocks: list[str] = []
+            for i, (title, content) in enumerate(custom_prompts, 1):
+                head = f"[{i}] {title}" if title else f"[{i}]"
+                cp_blocks.append(f"{head}\n{content.strip()}")
+            sections.append(
+                "=== Дополнительные указания автора (применять ко всем чатам) ===\n"
+                + "\n\n".join(cp_blocks)
+                + "\n\nЭти указания — фон. Не цитируй их в самом вопросе, "
+                "используй как ограничения/контекст."
+            )
+
+        if custom_links:
+            link_lines: list[str] = []
+            for url, desc in custom_links:
+                desc_clean = (desc or "").strip()
+                if desc_clean:
+                    link_lines.append(f"- {url} — {desc_clean}")
+                else:
+                    link_lines.append(f"- {url}")
+            sections.append(
+                "=== Внешние ресурсы автора (контекст, не цитировать URL в вопросе) ===\n"
+                + "\n".join(link_lines)
+                + "\n\nТы знаешь, что у автора есть эти ресурсы. Не упоминай URL "
+                "в самом вопросе — это нелепо звучит. Используй описания как "
+                "подсказку о том, чем автор живёт."
             )
 
         if is_global:

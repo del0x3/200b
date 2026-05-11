@@ -5,7 +5,16 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import ChatAnswer, ChatQuestion, ChatSession, Feedback, User, UserGlobalSession
+from app.models import (
+    ChatAnswer,
+    ChatQuestion,
+    ChatSession,
+    Feedback,
+    User,
+    UserGlobalSession,
+    UserLink,
+    UserPrompt,
+)
 
 
 class UserRepository:
@@ -42,6 +51,85 @@ class UserRepository:
 
     def set_onboarding_complete(self, user: User, complete: bool) -> None:
         user.onboarding_complete = complete
+        self._db.commit()
+
+
+class UserPromptRepository:
+    def __init__(self, db: Session) -> None:
+        self._db: Session = db
+
+    def list_for_user(self, user_id: int) -> list[UserPrompt]:
+        rows = self._db.scalars(
+            select(UserPrompt)
+            .where(UserPrompt.user_id == user_id)
+            .order_by(UserPrompt.position, UserPrompt.id)
+        ).all()
+        return list(rows)
+
+    def list_enabled_for_user(self, user_id: int) -> list[UserPrompt]:
+        rows = self._db.scalars(
+            select(UserPrompt)
+            .where(UserPrompt.user_id == user_id, UserPrompt.enabled.is_(True))
+            .order_by(UserPrompt.position, UserPrompt.id)
+        ).all()
+        return list(rows)
+
+    def get(self, prompt_id: int, user_id: int) -> UserPrompt | None:
+        return self._db.scalar(
+            select(UserPrompt).where(
+                UserPrompt.id == prompt_id, UserPrompt.user_id == user_id
+            )
+        )
+
+    def create(self, *, user_id: int, title: str, content: str, enabled: bool = True) -> UserPrompt:
+        p = UserPrompt(user_id=user_id, title=title, content=content, enabled=enabled)
+        self._db.add(p)
+        self._db.commit()
+        self._db.refresh(p)
+        return p
+
+    def update(self, prompt: UserPrompt, *, title: str, content: str, enabled: bool) -> None:
+        prompt.title = title
+        prompt.content = content
+        prompt.enabled = enabled
+        self._db.commit()
+
+    def delete(self, prompt: UserPrompt) -> None:
+        self._db.delete(prompt)
+        self._db.commit()
+
+
+class UserLinkRepository:
+    def __init__(self, db: Session) -> None:
+        self._db: Session = db
+
+    def list_for_user(self, user_id: int) -> list[UserLink]:
+        rows = self._db.scalars(
+            select(UserLink)
+            .where(UserLink.user_id == user_id)
+            .order_by(UserLink.position, UserLink.id)
+        ).all()
+        return list(rows)
+
+    def get(self, link_id: int, user_id: int) -> UserLink | None:
+        return self._db.scalar(
+            select(UserLink).where(UserLink.id == link_id, UserLink.user_id == user_id)
+        )
+
+    def create(self, *, user_id: int, url: str, description: str) -> UserLink:
+        link = UserLink(user_id=user_id, url=url, description=description)
+        self._db.add(link)
+        self._db.commit()
+        self._db.refresh(link)
+        return link
+
+    def update(self, link: UserLink, *, url: str, description: str) -> None:
+        link.url = url
+        link.description = description
+        self._db.commit()
+
+    def delete(self, link: UserLink) -> None:
+        self._db.delete(link)
         self._db.commit()
 
 

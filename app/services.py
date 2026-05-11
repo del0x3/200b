@@ -14,7 +14,7 @@ from app.profile_md import (
 )
 from app.prompts import FALLBACK_QUESTION, PromptBuilder
 from app.questions import QUESTIONS_BY_KEY, TOTAL_ONBOARDING_QUESTIONS, OnboardingQuestion
-from app.repositories import ChatRepository, UserRepository
+from app.repositories import ChatRepository, UserLinkRepository, UserPromptRepository, UserRepository
 from app.security import JwtService, PasswordHasher
 
 logger = logging.getLogger(__name__)
@@ -113,6 +113,8 @@ class OnboardingService:
 class ProfileService:
     def __init__(self, db: Session) -> None:
         self._users: UserRepository = UserRepository(db)
+        self._prompts: UserPromptRepository = UserPromptRepository(db)
+        self._links: UserLinkRepository = UserLinkRepository(db)
 
     def save_markdown(self, user: User, markdown: str) -> None:
         self._users.set_profile_md(user, markdown)
@@ -122,6 +124,50 @@ class ProfileService:
         self._users.set_profile_md(user, markdown)
         if not user.onboarding_complete and markdown.strip():
             self._users.set_onboarding_complete(user, True)
+
+    def list_prompts(self, user: User):
+        return self._prompts.list_for_user(user.id)
+
+    def create_prompt(self, user: User, *, title: str, content: str, enabled: bool = True):
+        return self._prompts.create(
+            user_id=user.id, title=title.strip(), content=content, enabled=enabled
+        )
+
+    def update_prompt(self, user: User, prompt_id: int, *, title: str, content: str, enabled: bool) -> bool:
+        p = self._prompts.get(prompt_id, user.id)
+        if p is None:
+            return False
+        self._prompts.update(p, title=title.strip(), content=content, enabled=enabled)
+        return True
+
+    def delete_prompt(self, user: User, prompt_id: int) -> bool:
+        p = self._prompts.get(prompt_id, user.id)
+        if p is None:
+            return False
+        self._prompts.delete(p)
+        return True
+
+    def list_links(self, user: User):
+        return self._links.list_for_user(user.id)
+
+    def create_link(self, user: User, *, url: str, description: str):
+        return self._links.create(
+            user_id=user.id, url=url.strip(), description=description
+        )
+
+    def update_link(self, user: User, link_id: int, *, url: str, description: str) -> bool:
+        link = self._links.get(link_id, user.id)
+        if link is None:
+            return False
+        self._links.update(link, url=url.strip(), description=description)
+        return True
+
+    def delete_link(self, user: User, link_id: int) -> bool:
+        link = self._links.get(link_id, user.id)
+        if link is None:
+            return False
+        self._links.delete(link)
+        return True
 
 
 @dataclass(frozen=True)
@@ -152,6 +198,8 @@ class ChatService:
         prompts: PromptBuilder | None = None,
     ) -> None:
         self._chat: ChatRepository = ChatRepository(db)
+        self._user_prompts: UserPromptRepository = UserPromptRepository(db)
+        self._user_links: UserLinkRepository = UserLinkRepository(db)
         self._deepseek: DeepSeekClient = deepseek
         self._prompts: PromptBuilder = prompts or PromptBuilder()
 
@@ -235,6 +283,14 @@ class ChatService:
         prior_experience: list[tuple[str, ChatQuestion, str | None]] | None = None,
         is_global: bool = False,
     ) -> str:
+        user_prompts: list[tuple[str, str]] = [
+            (p.title, p.content)
+            for p in self._user_prompts.list_enabled_for_user(user.id)
+            if p.content.strip()
+        ]
+        user_links: list[tuple[str, str]] = [
+            (l.url, l.description) for l in self._user_links.list_for_user(user.id)
+        ]
         messages = self._prompts.build(
             profile_md=user.profile_md,
             topic=session.topic,
@@ -243,6 +299,8 @@ class ChatService:
             pivot=pivot,
             prior_experience=prior_experience or [],
             is_global=is_global,
+            user_prompts=user_prompts,
+            user_links=user_links,
         )
         try:
             return await self._deepseek.chat(messages)

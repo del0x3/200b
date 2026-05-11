@@ -237,6 +237,62 @@ button.primary.big { width: 100%; padding: 14px 18px; font-size: 16px; }
 .nav-link:hover { color: var(--text); background: var(--surface-2); text-decoration: none; }
 .nav-upload { display: inline-flex; align-items: center; }
 
+/* ===== Секции на странице профиля ===== */
+.section-card { margin-top: 18px; }
+.section-card h2 {
+    font-size: 20px;
+    margin: 0 0 6px;
+}
+
+.ctx-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ctx-item {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: var(--surface-2);
+    position: relative;
+}
+.ctx-form { gap: 8px; }
+.ctx-title-input {
+    flex: 1;
+    margin-right: 12px;
+}
+.ctx-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+}
+.ctx-toggle input { width: auto; margin: 0; }
+.ctx-delete {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    margin: 0;
+}
+.ctx-delete button.danger {
+    border-color: var(--bad);
+    color: var(--bad);
+}
+.ctx-delete button.danger:hover {
+    background: rgba(255, 91, 107, 0.08);
+}
+
+button.small, .action-btn.small {
+    padding: 7px 12px;
+    font-size: 13px;
+}
+
 /* ===== CTA глобальной сессии ===== */
 .global-cta {
     display: flex;
