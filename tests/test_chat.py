@@ -173,6 +173,28 @@ def test_global_round_with_topic(authed_client: TestClient) -> None:
     assert "сегодня про усталость" in page or "Глобальный вопрос?" in page
 
 
+def test_global_round_starts_without_prior_visit(authed_client: TestClient) -> None:
+    """The home-page form lets the user start a global round in one shot,
+    without first navigating to GET /chat/global. /chat/global/start must
+    create the global session lazily."""
+    # NB: no GET /chat/global beforehand.
+    authed_client.fake_ds.queue("Первый глобальный?")  # type: ignore[attr-defined]
+    r = authed_client.post(
+        "/chat/global/start",
+        data={"topic": "стартую с главной"},
+        headers={"hx-request": "true"},
+        follow_redirects=False,
+    )
+    assert r.status_code == 200
+    target = r.headers["hx-redirect"]
+    assert target.startswith("/chat/session/")
+    page = authed_client.get(target).text
+    assert "Первый глобальный?" in page
+    # And the session should be the user's global one (not appear in /home list)
+    home = authed_client.get("/").text
+    assert "стартую с главной" not in home  # global topics are dynamic and not listed
+
+
 def test_continue_returns_unanswered_or_generates_new(authed_client: TestClient) -> None:
     session_id = _start(authed_client)
     r = authed_client.post("/chat/continue", data={"session_id": session_id})

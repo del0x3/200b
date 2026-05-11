@@ -22,6 +22,11 @@ def test_home_page_authed(authed_client: TestClient) -> None:
     # Home shows the topic-input prompt and the portrait CTA
     assert "тему дня" in r.text.lower() or "о чём хочешь" in r.text.lower()
     assert "Редактировать портрет" in r.text  # the fix from previous turn
+    # The single topic form should expose BOTH actions: new thematic session and global.
+    assert 'hx-post="/chat/start"' in r.text
+    assert 'hx-post="/chat/global/start"' in r.text
+    assert "Начать новую сессию" in r.text
+    assert "Добавить в глобальный" in r.text
 
 
 def test_profile_page_authed(authed_client: TestClient) -> None:

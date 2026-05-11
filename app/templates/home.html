@@ -6,31 +6,24 @@
 {% block content %}
 <div class="card" id="chat-card">
     <div id="topic-form">
-        <a href="/chat/global" class="global-cta">
-            <span class="global-cta-body">
-                <span class="global-cta-title">Глобальная сессия</span>
-                <span class="global-cta-sub">один общий поток — каждый раз новая тема дня поверх всего прошлого</span>
-            </span>
-            <span class="global-cta-arrow" aria-hidden="true">→</span>
-        </a>
-
-        <div class="divider"><span>или новая тематическая</span></div>
-
         <h1>О чём хочешь поговорить сегодня?</h1>
-        <p class="muted">Опиши тему дня в одном-двух предложениях. Нейронка задаст наводящие вопросы — твоя задача отвечать и отмечать, что заходит, а что нет.</p>
-        <form hx-post="/chat/start"
-              hx-target="#chat-card"
+        <p class="muted">Опиши тему дня в одном-двух предложениях. Можешь стартовать новую сессию по этой теме — или добавить эту тему в свой глобальный диалог поверх всего прошлого опыта.</p>
+        <form hx-target="#chat-card"
               hx-swap="innerHTML"
               hx-disabled-elt="find button"
               hx-indicator="#start-loader"
               class="stack">
             <textarea name="topic" rows="4" required autofocus placeholder="Например: как я учился готовить рамен по ночам"></textarea>
-            <button type="submit" class="primary big">Начать новую сессию</button>
+            <div class="topic-actions">
+                <button type="submit" class="primary big" hx-post="/chat/start">Начать новую сессию</button>
+                <button type="submit" class="ghost big" hx-post="/chat/global/start" title="Глобальный диалог — один общий поток, копится поверх всех тем">Добавить в глобальный</button>
+            </div>
             <div class="loader" id="start-loader" aria-live="polite" aria-hidden="true">
                 <span class="spinner"></span>
                 <span class="loader-text">формулирую первый вопрос…</span>
             </div>
         </form>
+        <a href="/chat/global" class="global-cta-open muted">Открыть прошлый глобальный диалог →</a>
 
         {% if sessions %}
         <div class="divider"><span>прошлые сессии</span></div>

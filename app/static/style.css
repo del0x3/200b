@@ -331,6 +331,28 @@ button.small, .action-btn.small {
 .global-cta-arrow { font-size: 20px; color: var(--accent); opacity: 0.7; }
 .global-cta:hover .global-cta-arrow { opacity: 1; }
 
+.topic-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.topic-actions button { flex: 1 1 220px; }
+
+.global-cta-open {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 4px 0;
+}
+.global-cta-open:hover { color: var(--text); text-decoration: none; }
+
+@media (max-width: 480px) {
+    .topic-actions { flex-direction: column; }
+    .topic-actions button { width: 100%; }
+}
+
 /* ===== Список сессий на главной ===== */
 .session-list {
     list-style: none;
