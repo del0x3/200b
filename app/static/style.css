@@ -357,6 +357,65 @@ button.primary.big { width: 100%; padding: 14px 18px; font-size: 16px; }
     opacity: 0.85;
 }
 
+/* ===== Голосовая панель (непрерывный режим) ===== */
+.stream-panel {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    background: var(--surface-2);
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.stream-panel[data-stream-state="streaming"] {
+    border-color: var(--accent);
+    background: linear-gradient(180deg, rgba(124, 92, 255, 0.10), var(--surface-2));
+}
+.stream-panel.stream-unsupported { opacity: 0.7; }
+.stream-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    align-self: flex-start;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.stream-btn:hover { border-color: var(--accent); }
+.stream-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.stream-panel[data-stream-state="streaming"] .stream-btn {
+    border-color: var(--bad);
+    color: var(--bad);
+    background: rgba(255, 91, 107, 0.08);
+    animation: mic-pulse 1.2s ease-in-out infinite;
+}
+.stream-icon { font-size: 16px; line-height: 1; }
+.stream-status {
+    font-size: 13px;
+    min-height: 18px;
+}
+.stream-buffer {
+    min-height: 22px;
+    padding: 6px 0;
+    font-size: 15px;
+    line-height: 1.4;
+    color: var(--muted);
+    border-radius: 8px;
+    white-space: pre-wrap;
+}
+.stream-buffer.has-text { color: var(--text); }
+.stream-hint {
+    font-size: 12px;
+    line-height: 1.4;
+}
+.stream-hint b { color: var(--text); font-weight: 600; }
+
 /* ===== Ответ на вопрос + микрофон ===== */
 .answer-form {
     display: flex;

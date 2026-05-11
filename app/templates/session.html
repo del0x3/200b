@@ -38,13 +38,29 @@
         </li>
         {% endfor %}
     </ol>
-    {% else %}
-    <p class="muted">В этой сессии ещё нет вопросов.</p>
     {% endif %}
 
-    <div class="divider"><span>продолжить</span></div>
+    <div class="divider"><span>сейчас</span></div>
+
+    <div id="stream-panel" class="stream-panel" data-stream-state="idle">
+        <button type="button" class="stream-btn" id="stream-toggle">
+            <span class="stream-icon">🎙</span>
+            <span class="stream-label">Включить непрерывный режим</span>
+        </button>
+        <div class="stream-status muted" id="stream-status"></div>
+        <div class="stream-buffer" id="stream-buffer" aria-live="polite"></div>
+        <div class="stream-hint muted">
+            Скажи «<b>дальше</b>», «<b>следующий</b>» или «<b>всё</b>» — и ответ улетит сразу.
+            Иначе он отправится через 3.5 сек тишины.
+        </div>
+    </div>
 
     <div id="chat-card">
+        {% if view.last_unanswered %}
+        {% with question_id = view.last_unanswered.id, question_text = view.last_unanswered.question_text, session_id = view.session.id %}
+        {% include "partials/question.html" %}
+        {% endwith %}
+        {% else %}
         <form hx-post="/chat/continue"
               hx-target="#chat-card"
               hx-swap="innerHTML"
@@ -53,13 +69,216 @@
               class="stack">
             <input type="hidden" name="session_id" value="{{ view.session.id }}">
             <button type="submit" class="primary big">
-                {% if view.last_unanswered %}Открыть последний вопрос{% else %}Сгенерировать следующий вопрос{% endif %}
+                {% if view.pairs %}Сгенерировать следующий вопрос{% else %}Сгенерировать первый вопрос{% endif %}
             </button>
             <div class="loader" id="continue-loader" aria-live="polite" aria-hidden="true">
                 <span class="spinner"></span>
-                <span class="loader-text">{% if view.last_unanswered %}открываю…{% else %}формулирую следующий вопрос…{% endif %}</span>
+                <span class="loader-text">формулирую вопрос…</span>
             </div>
         </form>
+        {% endif %}
     </div>
 </div>
+
+<script>
+(function () {
+    const panel = document.getElementById('stream-panel');
+    const btn = document.getElementById('stream-toggle');
+    const statusEl = document.getElementById('stream-status');
+    const bufEl = document.getElementById('stream-buffer');
+    const card = document.getElementById('chat-card');
+    if (!panel || !btn || !card) return;
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+        btn.disabled = true;
+        panel.classList.add('stream-unsupported');
+        statusEl.textContent = 'Непрерывный режим работает только в Chrome или Edge. Используй ручной ввод ниже.';
+        return;
+    }
+
+    const SILENCE_MS = 3500;
+    const TRIGGERS = ['дальше', 'следующий', 'следующее', 'всё', 'все'];
+
+    const state = {
+        active: false,
+        rec: null,
+        buf: '',
+        interim: '',
+        silenceTimer: null,
+        sending: false,
+        endingForRestart: false,
+    };
+
+    function setUi(mode, statusText) {
+        panel.dataset.streamState = mode;
+        if (mode === 'idle') {
+            btn.querySelector('.stream-icon').textContent = '🎙';
+            btn.querySelector('.stream-label').textContent = 'Включить непрерывный режим';
+        } else {
+            btn.querySelector('.stream-icon').textContent = '■';
+            btn.querySelector('.stream-label').textContent = 'Остановить';
+        }
+        if (statusText !== undefined) statusEl.textContent = statusText;
+    }
+
+    function paint() {
+        const shown = (state.buf + (state.interim ? ' ' + state.interim : '')).trim();
+        bufEl.textContent = shown;
+        bufEl.classList.toggle('has-text', !!shown);
+    }
+
+    function currentQuestionId() {
+        const q = card.querySelector('[data-question-id]');
+        return q ? q.getAttribute('data-question-id') : null;
+    }
+
+    function stripTriggerFromFinal(text) {
+        const lower = text.toLowerCase().trim();
+        for (const t of TRIGGERS) {
+            const re = new RegExp('\\b' + t + '[.,!?\\s]*$', 'i');
+            if (re.test(lower)) {
+                return { stripped: text.replace(re, '').trim(), hit: true };
+            }
+        }
+        return { stripped: text, hit: false };
+    }
+
+    function clearSilence() {
+        if (state.silenceTimer) {
+            clearTimeout(state.silenceTimer);
+            state.silenceTimer = null;
+        }
+    }
+    function armSilence() {
+        clearSilence();
+        if (state.buf.trim()) {
+            state.silenceTimer = setTimeout(() => flush('silence'), SILENCE_MS);
+        }
+    }
+
+    async function flush(reason) {
+        if (state.sending) return;
+        const text = state.buf.trim();
+        if (!text) return;
+        const qid = currentQuestionId();
+        if (!qid) {
+            statusEl.textContent = 'Нет вопроса для ответа — нажми "Сгенерировать вопрос" внизу.';
+            return;
+        }
+        clearSilence();
+        state.sending = true;
+        state.buf = '';
+        state.interim = '';
+        paint();
+        statusEl.textContent = reason === 'trigger' ? 'отправляю по голосовой команде…' : 'отправляю по тишине…';
+
+        try {
+            await window.htmx.ajax('POST', '/chat/answer', {
+                target: '#chat-card',
+                swap: 'innerHTML',
+                values: { question_id: qid, answer_text: text },
+            });
+            statusEl.textContent = state.active ? 'слушаю…' : '';
+        } catch (e) {
+            statusEl.textContent = 'не удалось отправить: ' + (e.message || e);
+            state.buf = text;
+            paint();
+        } finally {
+            state.sending = false;
+        }
+    }
+
+    function onResult(e) {
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+            const r = e.results[i];
+            const txt = r[0].transcript;
+            if (r.isFinal) {
+                const { stripped, hit } = stripTriggerFromFinal(txt);
+                if (stripped) {
+                    state.buf += (state.buf && !state.buf.endsWith(' ') ? ' ' : '') + stripped;
+                }
+                if (hit) {
+                    state.interim = '';
+                    paint();
+                    flush('trigger');
+                    return;
+                }
+            } else {
+                interim += txt;
+            }
+        }
+        state.interim = interim;
+        paint();
+        armSilence();
+    }
+
+    function startRec() {
+        const rec = new SR();
+        rec.lang = 'ru-RU';
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.onresult = onResult;
+        rec.onerror = function (e) {
+            if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                statusEl.textContent = 'Нет доступа к микрофону — разреши его в настройках браузера.';
+                stopStream();
+            } else if (e.error === 'no-speech') {
+                // тишина — не страшно, onend перезапустит
+            } else if (e.error === 'aborted') {
+                // нормальная остановка
+            } else {
+                statusEl.textContent = 'Ошибка распознавания: ' + e.error;
+            }
+        };
+        rec.onend = function () {
+            if (state.active && !state.endingForRestart) {
+                // auto-restart (Chrome рвёт на ~60c тишины)
+                state.endingForRestart = true;
+                setTimeout(() => {
+                    state.endingForRestart = false;
+                    if (state.active) {
+                        try { rec.start(); } catch (e) { /* already started */ }
+                    }
+                }, 120);
+            }
+        };
+        try {
+            rec.start();
+            state.rec = rec;
+        } catch (e) {
+            statusEl.textContent = 'Не удалось запустить запись: ' + e.message;
+        }
+    }
+
+    function startStream() {
+        if (state.active) return;
+        state.active = true;
+        state.buf = '';
+        state.interim = '';
+        paint();
+        setUi('streaming', 'слушаю…');
+        startRec();
+    }
+    function stopStream() {
+        state.active = false;
+        clearSilence();
+        if (state.rec) {
+            try { state.rec.abort(); } catch (e) {}
+            state.rec = null;
+        }
+        setUi('idle', '');
+        state.interim = '';
+        paint();
+    }
+
+    btn.addEventListener('click', () => {
+        if (state.active) stopStream(); else startStream();
+    });
+
+    // Если юзер уходит со страницы — гасим recognition
+    window.addEventListener('pagehide', stopStream);
+})();
+</script>
 {% endblock %}

@@ -69,7 +69,7 @@ async def continue_session(
     return _render_question(request, current.session_id, current.question.id, current.question.question_text)
 
 
-@router.post("/start", response_class=HTMLResponse)
+@router.post("/start")
 async def start(
     request: Request,
     topic: str = Form(...),
@@ -81,7 +81,12 @@ async def start(
     except ValidationError:
         return Response(content="Тема не может быть пустой.", status_code=400)
     current = await service.start(user=user, topic=form.topic)
-    return _render_question(request, current.session_id, current.question.id, current.question.question_text)
+    target = f"/chat/session/{current.session_id}"
+    if request.headers.get("hx-request"):
+        resp = Response(status_code=200)
+        resp.headers["HX-Redirect"] = target
+        return resp
+    return RedirectResponse(url=target, status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/feedback", response_class=HTMLResponse)
